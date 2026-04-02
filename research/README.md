@@ -10,7 +10,7 @@ Svaka tema istražena iz dva (ili više) neovisna izvora radi križne provjere �
 | 02 | Lančana RSA/P-256 verifikacija | BLOKIRAJUĆE | [prompt](prompts/02-lancana-kriptografija-gnosis.md) | [gotovo](reports/02a-lancana-kriptografija-gnosis-claude.md) | [gotovo](reports/02b-lancana-kriptografija-gnosis-perplexity.md) | [62/100](compare/02-lancana-kriptografija-gnosis.md) |
 | 03 | ERC-4337 Paymaster na Gnosisu | BLOKIRAJUĆE | [prompt](prompts/03-erc4337-gnosis.md) | [gotovo](reports/03a-erc4337-gnosis-claude.md) | [gotovo](reports/03b-erc4337-gnosis-perplexity.md) | [88/100](compare/03-erc4337-gnosis.md) |
 | 04 | 0xSplits i razdjelnici | VAŽNO | [prompt](prompts/04-0xsplits-gnosis.md) | [gotovo](reports/04a-0xsplits-gnosis-claude.md) | [gotovo](reports/04b-0xsplits-gnosis-perplexity.md) | [91/100](compare/04-0xsplits-gnosis.md) |
-| 05 | eIDAS 2.0 / EUDI novčanik | VAŽNO | [prompt](prompts/05-eidas2-eudi.md) | [čeka](reports/05a-eidas2-eudi-claude.md) | [čeka](reports/05b-eidas2-eudi-perplexity.md) | — |
+| 05 | eIDAS 2.0 / EUDI novčanik | VAŽNO | [prompt](prompts/05-eidas2-eudi.md) | [gotovo](reports/05a-eidas2-eudi-claude.md) | [gotovo](reports/05b-eidas2-eudi-perplexity.md) | [85/100](compare/05-eidas2-eudi.md) |
 | 06 | GDPR i hashirani identifikatori | VAŽNO | [prompt](prompts/06-gdpr-hash-identifikatori.md) | [čeka](reports/06a-gdpr-hash-claude.md) | [čeka](reports/06b-gdpr-hash-perplexity.md) | — |
 | 07 | Monerium EURe na Gnosisu | VAŽNO | [prompt](prompts/07-monerium-eure-gnosis.md) | [čeka](reports/07a-monerium-eure-claude.md) | [čeka](reports/07b-monerium-eure-perplexity.md) | — |
 
@@ -47,3 +47,4 @@ research/
 | 02 | Lančana RSA/P-256 verifikacija | **62/100** | **Kritično proturječje:** RSA-2048 gas — Claude kaže ~25-35K, Perplexity kaže ~1,5-2,5M (50x razlika). Perplexity pouzdaniji (citira benchmarkove). Oba se slažu: izvedivo na Gnosisu, P-256 jeftiniji, ZK alternativa održiva. |
 | 03 | ERC-4337 na Gnosisu | **88/100** | Najviša podudarnost. Oba potvrđuju zrelu infrastrukturu (4+ bundlera, 6+ paymastera). Ključna strateška razlika: Perplexity preporučuje razmotriti meta-transakcije (EIP-2771/OpenGSN) kao jednostavniju alternativu za naš use case. |
 | 04 | 0xSplits i razdjelnici | **91/100** | Dosad najviša. 0xSplits V2 PushSplit potvrđen na Gnosisu, revidiran, EURe kompatibilan, SDK zreo. EURe blacklist fallback u Warehouse rješava T13. ADR Q6 može se zatvoriti. |
+| 05 | eIDAS 2.0 / EUDI | **85/100** | 20 zajedničkih činjenica. P-256 primarni algoritam (potvrđuje naš dizajn). Nema EUDI nullifiera — moramo sami. SD-JWT-VC format za online (ne klasični JWT). Certilia koegzistira. ARF verzija nepotvrđena (Claude v2.8.0 vs Perplexity v1.2.0). |
