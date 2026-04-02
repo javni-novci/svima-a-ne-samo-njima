@@ -81,15 +81,20 @@ Ovaj repozitorij trenutno razvija infrastrukturu za marketplace. Ali zamislite b
 * **Glasanje:** Svaki gradanin sa CERTILIA SBT-om ima pravo na tocno jedan on-chain glas. Nemoguce je lazirati izbore.
 * **Proracun:** Gnosis Safe trezor postaje digitalna drzavna riznica. Svaki isplaceni EURe je javno vidljiv, provjerljiv i isplacen iskljucivo verificiranim izvodacima.
 
+## Dokumentacija
+
+- **[Architecture Decision Record & Threat Model](docs/architecture.md)** — detaljan tehniicki pregled odluka, odbacenih alternativa, analize prijetnji i specifikacija pametnih ugovora.
+
 ## Kako doprinijeti (Call for Brainstorming)
 
-Ovo je radni dokument (Whitepaper v0.1). Prije nego napisemo ijednu liniju koda, zelimo razbiti ovu arhitekturu na komade i pronaci sve potencijalne mane.
+Ovo je radni dokument (Whitepaper v0.2). Prije nego napisemo ijednu liniju koda, zelimo razbiti ovu arhitekturu na komade i pronaci sve potencijalne mane.
 
 **Otvorene teme za raspravu u GitHub Issues:**
 
-1. Koji je najoptimalniji nacin za On-chain dekodiranje RSA/P-256 potpisa iz JWT-a na Gnosis mrezi?
-2. Kako najelegantnije rijesiti "Gasless" iskustvo za prvu transakciju (mintanje SBT-a) preko ERC-4337 (Account Abstraction) ili Gelato Relayera?
-3. Kako strukturirati Zodiac Role Module za automatsku raspodjelu sredstava kreatorima?
+1. Koji algoritam koristi Certilia za JWT potpis i podrzava li custom `nonce`?
+2. Koji je najoptimalniji nacin za on-chain RSA/P-256 verifikaciju na Gnosis mrezi?
+3. Kako najelegantnije rijesiti "Gasless" iskustvo preko ERC-4337 ili Gelato Relayera?
+4. Kako strukturirati Zodiac Role Module za automatsku raspodjelu sredstava kreatorima?
 
 Forkajte, otvarajte PR-ove, pisite Issues. Idemo napraviti nesto veliko.
 
