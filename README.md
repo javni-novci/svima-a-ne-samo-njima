@@ -1,102 +1,102 @@
 # javni-novci / svima-a-ne-samo-njima
 
-**Povezivanje hrvatskog e-Gradani identiteta (Certilia) s Web3 infrastrukturom.**
-*Gradimo open-source temelj za potpuno transparentno i sigurno upravljanje zajednickim sredstvima.*
+**Povezivanje hrvatskog e-Građani identiteta (Certilia) s Web3 infrastrukturom.**
+*Gradimo otvoreni temelj za potpuno transparentno i sigurno upravljanje zajedničkim sredstvima.*
 
 ## Vizija
 
-Pocinjemo s jednostavnim problemom: Kako napraviti potpuno transparentan trezor (treasury) za digitalne kreatore u kojem su sredstva sigurna, a isplate matematicki pravedne?
+Počinjemo s jednostavnim problemom: Kako napraviti potpuno transparentan trezor za digitalne kreatore u kojem su sredstva sigurna, a isplate matematički pravedne?
 
-No, nas **ultimativni cilj** je puno veci. Zelimo stvoriti open-source infrastrukturu koja dokazuje da je **elektronicko on-chain glasanje** i **potpuno transparentno upravljanje drzavnim proracunom** tehnicki moguce vec danas.
+No, naš **ultimativni cilj** je puno veći. Želimo stvoriti otvorenu infrastrukturu koja dokazuje da je **elektroničko lančano glasanje** i **potpuno transparentno upravljanje državnim proračunom** tehnički moguće već danas.
 
-Ako mozemo sigurno upravljati novcem podcast kreatora pomocu Certilije, sutra istom tehnologijom mozemo upravljati novcem svih gradana. **Svima, a ne samo njima.**
+Ako možemo sigurno upravljati novcem podcast kreatora pomoću Certilije, sutra istom tehnologijom možemo upravljati novcem svih građana. **Svima, a ne samo njima.**
 
-## Problem: Web3 Anonimnost vs. Pravni Identitet
+## Problem: Web3 anonimnost nasuprot pravnom identitetu
 
-Blockchain rjesava problem transparentnosti, ali pati od *Sybil* napada (jedna osoba moze napraviti 100 novcanika). S druge strane, drzavni sustavi (poput AKD Certilia Mobile.id) imaju savrsen pravni identitet, ali su zatvoreni (silosi) i oslanjaju se na slijepo povjerenje u centralni server.
+Blockchain rješava problem transparentnosti, ali pati od *Sybil* napada (jedna osoba može napraviti 100 novčanika). S druge strane, državni sustavi (poput AKD Certilia Mobile.id) imaju savršen pravni identitet, ali su zatvoreni (silosi) i oslanjaju se na slijepo povjerenje u centralni poslužitelj.
 
-**Nas izazov:** Kako blockchain pametnom ugovoru (Safe Treasury) dokazati da iza odredene Ethereum adrese stoji stvarna, verificirana osoba iz Hrvatske (eIDAS uskadenost), **bez da ikada zapisemo njene osobne podatke na blockchain** i **bez da nas backend server ima pristup njihovom novcaniku**?
+**Naš izazov:** Kako blockchain pametnom ugovoru (Safe trezor) dokazati da iza određene Ethereum adrese stoji stvarna, verificirana osoba iz Hrvatske (eIDAS usklađenost), **bez da ikada zapišemo njene osobne podatke na blockchain** i **bez da naš poslužitelj ima pristup njihovom novčaniku**?
 
-## Arhitektura (Proof of Concept)
+## Arhitektura (dokaz koncepta)
 
-Odbacujemo klasicne Web2 arhitekture gdje server drzi sve kljuceve. Gradimo "Trustless" sustav na **Gnosis Chainu**, koristeci eure (MiCA uskladeni **EURe**) i **Soulbound Tokene (SBT)**.
+Odbacujemo klasične Web2 arhitekture gdje poslužitelj drži sve ključeve. Gradimo sustav bez povjerenja na **Gnosis lancu**, koristeći eure (MiCA usklađeni **EURe**) i **neprenosive tokene identiteta (SBT)**.
 
-### Korak po korak tok (Flow)
+### Tok korak po korak
 
-1. **OIDC Back-channel Verifikacija:** Korisnik se prijavljuje preko klijenta putem `Certilia Mobile.id`. Vas OIDC zahtjev kao `nonce` parametar salje korisnikovu Web3 adresu.
-2. **Server kao Postar:** Nas Node.js server sigurno komunicira s Certilijom, zaprima kriptografski potpisan **JWT** (JSON Web Token) od AKD-a i samo ga prosljeduje nazad klijentu. Server *nema* Web3 privatne kljuceve.
-3. **Self-Minting SBT-a:** Klijent u svom pregledniku (Self-custody wallet) uzima taj JWT i poziva funkciju na nasem pametnom ugovoru na Gnosis mrezi.
-4. **On-Chain JWT Verifikacija:** Pametni ugovor na Gnosisu (zbog jeftinog gasa) samostalno dekodira JWT, provjerava javni kljuc AKD-a i verificira da je `nonce` jednak adresi posiljatelja.
-5. **Izdavanje:** Ako je sve ispravno, pametni ugovor minta **CERTILIA Soulbound Token (SBT)** na korisnikov novcanik.
-6. **Safe integracija:** Safe Treasury (kroz Zodiac module ili Guard) prepoznaje SBT. Samo novcanici s vazecim CERTILIA SBT-om mogu inicirati isplate ili sudjelovati u glasanju (DAO).
+1. **OIDC verifikacija kroz stražnji kanal:** Korisnik se prijavljuje preko klijenta putem `Certilia Mobile.id`. OIDC zahtjev kao `nonce` parametar šalje korisnikovu Web3 adresu.
+2. **Poslužitelj kao poštar:** Naš Node.js poslužitelj sigurno komunicira s Certilijom, zaprima kriptografski potpisan **JWT** od AKD-a i samo ga prosljeđuje nazad klijentu. Poslužitelj *nema* Web3 privatne ključeve.
+3. **Samokovanje SBT-a:** Klijent u svom pregledniku (novčanik pod vlastitom skrbi) uzima taj JWT i poziva funkciju na našem pametnom ugovoru na Gnosis mreži.
+4. **Lančana JWT verifikacija:** Pametni ugovor na Gnosisu (zbog jeftinog goriva) samostalno dekodira JWT, provjerava javni ključ AKD-a i verificira da je `nonce` jednak adresi pošiljatelja.
+5. **Izdavanje:** Ako je sve ispravno, pametni ugovor kuje **CERTILIA neprenosivi token identiteta (SBT)** na korisnikov novčanik.
+6. **Safe integracija:** Safe trezor (kroz Zodiac module ili stražara) prepoznaje SBT. Samo novčanici s važećim CERTILIA SBT-om mogu inicirati isplate ili sudjelovati u glasanju (DAO).
 
 ### Dijagram toka
 
 ```
-Korisnik (Preglednik + Self-custody Wallet)
+Korisnik (Preglednik + Novčanik pod vlastitom skrbi)
     |
     |  1. Prijava putem Certilia Mobile.id
     |     (nonce = korisnikova Web3 adresa)
     v
-+-------------------+
-|   Node.js Server  |  <-- 2. OIDC Back-channel
-|   (Postar)        |      Zaprima potpisani JWT od AKD-a
-+-------------------+      Prosljeduje ga klijentu
-    |                       Nema pristup privatnim kljucevima!
-    |  3. JWT vracen klijentu
++---------------------+
+|   Node.js Poslužitelj|  <-- 2. OIDC stražnji kanal
+|   (Poštar)           |      Zaprima potpisani JWT od AKD-a
++---------------------+      Prosljeđuje ga klijentu
+    |                         Nema pristup privatnim ključevima!
+    |  3. JWT vraćen klijentu
     v
 Korisnik (Preglednik)
     |
     |  4. Poziva pametni ugovor s JWT-om
     v
 +---------------------------+
-|  Gnosis Chain             |
-|  Pametni Ugovor           |
+|  Gnosis lanac             |
+|  Pametni ugovor           |
 |  - Dekodira JWT           |
-|  - Provjerava AKD potpis  |  <-- 5. On-chain verifikacija
+|  - Provjerava AKD potpis  |  <-- 5. Lančana verifikacija
 |  - nonce == msg.sender?   |
-|  - Minta CERTILIA SBT     |
+|  - Kuje CERTILIA SBT      |
 +---------------------------+
     |
     |  6. SBT izdan
     v
 +---------------------------+
-|  Safe Treasury (DAO)      |
-|  - Zodiac Role Module     |
+|  Safe trezor (DAO)        |
+|  - Zodiac modul uloga     |
 |  - Samo SBT nositelji     |  <-- Glasanje, isplate
 |    mogu sudjelovati       |
 +---------------------------+
 ```
 
-## Sigurnost i Privatnost (Privacy by Design)
+## Sigurnost i privatnost (privatnost od temelja)
 
-* **Nema Single Point of Failure:** Ako netko hakira nas Node.js server, ne moze ukrasti sredstva iz trezora jer server nema pristup privatnim kljucevima niti moze lazirati Certilia (AKD) potpis.
-* **Nema osobnih podataka on-chain:** SBT sluzi samo kao kriptografska "znacka" (Zero-Knowledge pristup). Ime, prezime i OIB ostaju privatni.
-* **Opozivost (Revocability):** U slucaju gubitka mobitela ili isteka osobne iskaznice, DAO/Safe moze opozvati SBT on-chain.
+* **Nema jedne točke kvara:** Ako netko hakira naš Node.js poslužitelj, ne može ukrasti sredstva iz trezora jer poslužitelj nema pristup privatnim ključevima niti može lažirati Certilia (AKD) potpis.
+* **Nema osobnih podataka na lancu:** SBT služi samo kao kriptografska "značka". Ime, prezime i OIB ostaju privatni.
+* **Opozivost:** U slučaju gubitka mobitela ili isteka osobne iskaznice, DAO/Safe može opozvati SBT na lancu.
 
-## Od PoC-a do Drzavnog Proracuna
+## Od dokaza koncepta do državnog proračuna
 
-Ovaj repozitorij trenutno razvija infrastrukturu za marketplace. Ali zamislite buducnost:
+Ovaj repozitorij trenutno razvija infrastrukturu za tržište. Ali zamislite budućnost:
 
-* **Glasanje:** Svaki gradanin sa CERTILIA SBT-om ima pravo na tocno jedan on-chain glas. Nemoguce je lazirati izbore.
-* **Proracun:** Gnosis Safe trezor postaje digitalna drzavna riznica. Svaki isplaceni EURe je javno vidljiv, provjerljiv i isplacen iskljucivo verificiranim izvodacima.
+* **Glasanje:** Svaki građanin sa CERTILIA SBT-om ima pravo na točno jedan lančani glas. Nemoguće je lažirati izbore.
+* **Proračun:** Gnosis Safe trezor postaje digitalna državna riznica. Svaki isplaćeni EURe je javno vidljiv, provjerljiv i isplaćen isključivo verificiranim izvođačima.
 
 ## Dokumentacija
 
-- **[Architecture Decision Record & Threat Model](docs/architecture.md)** — detaljan tehniicki pregled odluka, odbacenih alternativa, analize prijetnji i specifikacija pametnih ugovora.
+- **[Zapis arhitektonskih odluka i model prijetnji](docs/architecture.md)** — detaljan tehnički pregled odluka, odbačenih alternativa, analize prijetnji i specifikacija pametnih ugovora.
 
-## Kako doprinijeti (Call for Brainstorming)
+## Kako doprinijeti (poziv na raspravu)
 
-Ovo je radni dokument (Whitepaper v0.2). Prije nego napisemo ijednu liniju koda, zelimo razbiti ovu arhitekturu na komade i pronaci sve potencijalne mane.
+Ovo je radni dokument (v0.2). Prije nego napišemo ijednu liniju koda, želimo razbiti ovu arhitekturu na komade i pronaći sve potencijalne mane.
 
-**Otvorene teme za raspravu u GitHub Issues:**
+**Otvorene teme za raspravu u GitHub pitanjima:**
 
-1. Koji algoritam koristi Certilia za JWT potpis i podrzava li custom `nonce`?
-2. Koji je najoptimalniji nacin za on-chain RSA/P-256 verifikaciju na Gnosis mrezi?
-3. Kako najelegantnije rijesiti "Gasless" iskustvo preko ERC-4337 ili Gelato Relayera?
-4. Kako strukturirati Zodiac Role Module za automatsku raspodjelu sredstava kreatorima?
+1. Koji algoritam koristi Certilia za JWT potpis i podržava li prilagođeni `nonce`?
+2. Koji je najoptimalniji način za lančanu RSA/P-256 verifikaciju na Gnosis mreži?
+3. Kako najelegantnije riješiti iskustvo bez goriva preko ERC-4337 ili Gelato posrednika?
+4. Kako strukturirati Zodiac modul uloga za automatsku raspodjelu sredstava kreatorima?
 
-Forkajte, otvarajte PR-ove, pisite Issues. Idemo napraviti nesto veliko.
+Forkajte, otvarajte zahtjeve za izmjenama, pišite pitanja. Idemo napraviti nešto veliko.
 
 ## Licenca
 

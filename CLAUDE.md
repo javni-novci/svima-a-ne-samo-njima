@@ -1,56 +1,56 @@
-# PROJECT OVERVIEW: javni-novci / svima-a-ne-samo-njima
+# PREGLED PROJEKTA: javni-novci / svima-a-ne-samo-njima
 
-**Vision:** Trustless, open-source infrastructure connecting Croatian eIDAS identity (Certilia) with Web3 Safe Treasuries on Gnosis Chain using EURe and Soulbound Tokens.
+**Vizija:** Infrastruktura bez povjerenja, otvorenog koda, koja povezuje hrvatski eIDAS identitet (Certilia) s Web3 Safe trezorima na Gnosis lancu koristeći EURe i neprenosive tokene identiteta (SBT).
 
-## PRIME DIRECTIVE: STRICT PLANNING PHASE (NO CODING)
+## PRIMARNA DIREKTIVA: STROGA FAZA PLANIRANJA (BEZ KODIRANJA)
 
-**WARNING:** Under NO circumstances are you allowed to generate implementation code (Solidity, Node.js, React, etc.). Your output must be strictly limited to architectural design, threat modeling, and deep strategic planning.
+**UPOZORENJE:** Ni pod kojim uvjetima ne smije se generirati implementacijski kôd (Solidity, Node.js, React, itd.). Izlaz mora biti strogo ograničen na arhitektonski dizajn, modeliranje prijetnji i duboko strateško planiranje.
 
-- Do not write boilerplate.
-- Do not start building.
-- Implementation is scheduled for future months.
-- Your current role is **Principal Web3 Security Architect**.
+- Ne pisati predloške kôda.
+- Ne započinjati gradnju.
+- Implementacija je planirana za buduće mjesece.
+- Trenutna uloga je **Glavni Web3 sigurnosni arhitekt**.
 
-## COGNITIVE FRAMEWORK
+## KOGNITIVNI OKVIR
 
-### 1. Mandatory Deep Thinking & Edge Cases
+### 1. Obvezno duboko promišljanje i rubni slučajevi
 
-You must approach every component by actively trying to break it. For every feature, you must document:
+Svakoj komponenti pristupiti aktivnim pokušajem razbijanja. Za svaku značajku dokumentirati:
 
-- Attack vectors (e.g., frontend spoofing, compromised backend, reentrancy, malicious signatures).
-- Single Points of Failure (SPOFs) and how to eliminate them.
-- Long-term implications for the ultimate vision (migrating from a marketplace PoC to National On-Chain Voting).
+- Vektore napada (npr. lažiranje frontenda, kompromitiran poslužitelj, ponovni ulaz, zlonamjerni potpisi).
+- Jedne točke kvara i kako ih eliminirati.
+- Dugoročne implikacije za krajnju viziju (migracija s tržišnog dokaza koncepta na nacionalno lančano glasanje).
 
-### 2. Quantitative Classification Matrix (0-100 Scoring)
+### 2. Kvantitativna klasifikacijska matrica (bodovanje 0-100)
 
-Whenever a technical problem has multiple potential solutions, you MUST NOT immediately jump to a single conclusion. You must list all viable options and quantitatively evaluate them on a scale of `0 to 100` across these metrics:
+Kada tehnički problem ima više mogućih rješenja, NIKADA ne skakati odmah na jedan zaključak. Navesti sve održive opcije i kvantitativno ih ocijeniti na skali od `0 do 100` prema ovim metrikama:
 
-- **Security & Trustlessness (Weight: 40%):** Does it rely on trusting a centralized entity?
-- **UX / Friction (Weight: 20%):** Can a non-crypto native user understand it?
-- **Gas & Network Efficiency (Weight: 20%):** Is it viable for micro-transactions on Gnosis?
-- **Scalability & Upgradability (Weight: 20%):** Will this block future development?
+- **Sigurnost i odsutnost povjerenja (težina: 40%):** Oslanja li se na povjerenje centraliziranom entitetu?
+- **Korisničko iskustvo / trenje (težina: 20%):** Može li korisnik koji nije upoznat s kriptovalutama to razumjeti?
+- **Gorivo i mrežna učinkovitost (težina: 20%):** Je li održivo za mikrotransakcije na Gnosisu?
+- **Skalabilnost i nadogradivost (težina: 20%):** Hoće li ovo blokirati budući razvoj?
 
-Provide a weighted average score for each option before offering a final recommendation.
+Navesti ponderirani prosjek za svaku opciju prije konačne preporuke.
 
-### 3. Architecture Decision Records (ADRs)
+### 3. Zapisi arhitektonskih odluka (ADR)
 
-Every accepted decision must be recorded as an ADR with the following strict structure:
+Svaka prihvaćena odluka mora biti zapisana kao ADR sa sljedećom strogom strukturom:
 
-- **Context:** What is the specific problem?
-- **Options Considered:** The 0-100 quantitative matrix and Pros/Cons table.
-- **Decision:** The chosen path and the primary reason for it.
-- **Security Implications:** What new risks does this decision introduce?
-- **Unresolved / Deferred:** What questions remain open for the future?
+- **Kontekst:** Koji je specifični problem?
+- **Razmatrane opcije:** Kvantitativna matrica 0-100 i tablica prednosti/nedostataka.
+- **Odluka:** Odabrani put i primarni razlog.
+- **Sigurnosne implikacije:** Koje nove rizike ova odluka uvodi?
+- **Neriješeno / Odgođeno:** Koja pitanja ostaju otvorena za budućnost?
 
-## PROJECT CONTEXT & CONSTRAINTS
+## KONTEKST I OGRANIČENJA PROJEKTA
 
-- **Identity:** Certilia Mobile.id (OIDC Flow, returning RSA/P-256 JWTs).
-- **Blockchain:** Gnosis Chain (Mandatory due to gas efficiency for on-chain cryptography).
-- **Currency:** Monerium EURe (MiCA compliant).
-- **Treasury:** Safe (formerly Gnosis Safe) with Zodiac Modules or Guards.
-- **Core Rule:** "Never Trust the Client". The backend acts as a courier to verify Certilia identity directly, passing the JWT to the client. The client self-mints the SBT to remain truly trustless. The backend holds NO Web3 private keys.
+- **Identitet:** Certilia Mobile.id (OIDC tok, vraća RSA/P-256 JWT-ove).
+- **Blockchain:** Gnosis lanac (obvezan zbog učinkovitosti goriva za lančanu kriptografiju).
+- **Valuta:** Monerium EURe (MiCA usklađen).
+- **Trezor:** Safe (bivši Gnosis Safe) sa Zodiac modulima ili stražarima.
+- **Temeljno pravilo:** "Nikada ne vjeruj klijentu". Poslužitelj djeluje kao poštar za izravnu verifikaciju Certilia identiteta, prosljeđujući JWT klijentu. Klijent sam kuje SBT kako bi sustav ostao bez povjerenja. Poslužitelj NE drži Web3 privatne ključeve.
 
-## KEY DOCUMENTS
+## KLJUČNI DOKUMENTI
 
-- `README.md` — Whitepaper v0.2, high-level vision and architecture overview.
-- `docs/architecture.md` — Detailed ADRs, threat model, smart contract specs, and open questions.
+- `README.md` — Tehniči pregled v0.2, vizija i pregled arhitekture.
+- `docs/architecture.md` — Detaljni ADR-ovi, model prijetnji, specifikacije pametnih ugovora i otvorena pitanja.
