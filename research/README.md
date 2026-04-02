@@ -13,6 +13,7 @@ Svaka tema istražena iz dva (ili više) neovisna izvora radi križne provjere �
 | 05 | eIDAS 2.0 / EUDI novčanik | VAŽNO | [prompt](prompts/05-eidas2-eudi.md) | [gotovo](reports/05a-eidas2-eudi-claude.md) | [gotovo](reports/05b-eidas2-eudi-perplexity.md) | [85/100](compare/05-eidas2-eudi.md) |
 | 06 | GDPR i hashirani identifikatori | VAŽNO | [prompt](prompts/06-gdpr-hash-identifikatori.md) | [gotovo](reports/06a-gdpr-hash-claude.md) | [gotovo](reports/06b-gdpr-hash-perplexity.md) | [93/100](compare/06-gdpr-hash.md) |
 | 07 | Monerium EURe na Gnosisu | VAŽNO | [prompt](prompts/07-monerium-eure-gnosis.md) | [gotovo](reports/07a-monerium-eure-claude.md) | [gotovo](reports/07b-monerium-eure-perplexity.md) | [92/100](compare/07-monerium-eure.md) |
+| 08 | Izvori financiranja projekta | STRATEŠKO | [prompt](prompts/08-financiranje-projekt.md) | [čeka](reports/08a-financiranje-claude.md) | [čeka](reports/08b-financiranje-perplexity.md) | — |
 
 ## Struktura
 
