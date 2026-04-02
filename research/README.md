@@ -7,7 +7,7 @@ Svaka tema istražena iz dva (ili više) neovisna izvora radi križne provjere �
 | # | Tema | Prioritet | Prompt | Claude Opus 4.6 | Perplexity | Usporedba |
 |---|------|-----------|--------|-----------------|------------|-----------|
 | 01 | Certilia Mobile.id specifikacije | BLOKIRAJUĆE | [prompt](prompts/01-certilia-mobileid.md) | [gotovo](reports/01a-certilia-mobileid-claude.md) | [gotovo](reports/01b-certilia-mobileid-perplexity.md) | [82/100](compare/01-certilia-mobileid.md) |
-| 02 | Lančana RSA/P-256 verifikacija | BLOKIRAJUĆE | [prompt](prompts/02-lancana-kriptografija-gnosis.md) | [čeka](reports/02a-lancana-kriptografija-gnosis-claude.md) | [čeka](reports/02b-lancana-kriptografija-gnosis-perplexity.md) | — |
+| 02 | Lančana RSA/P-256 verifikacija | BLOKIRAJUĆE | [prompt](prompts/02-lancana-kriptografija-gnosis.md) | [gotovo](reports/02a-lancana-kriptografija-gnosis-claude.md) | [gotovo](reports/02b-lancana-kriptografija-gnosis-perplexity.md) | [62/100](compare/02-lancana-kriptografija-gnosis.md) |
 | 03 | ERC-4337 Paymaster na Gnosisu | BLOKIRAJUĆE | [prompt](prompts/03-erc4337-gnosis.md) | [čeka](reports/03a-erc4337-gnosis-claude.md) | [čeka](reports/03b-erc4337-gnosis-perplexity.md) | — |
 | 04 | 0xSplits i razdjelnici | VAŽNO | [prompt](prompts/04-0xsplits-gnosis.md) | [čeka](reports/04a-0xsplits-gnosis-claude.md) | [čeka](reports/04b-0xsplits-gnosis-perplexity.md) | — |
 | 05 | eIDAS 2.0 / EUDI novčanik | VAŽNO | [prompt](prompts/05-eidas2-eudi.md) | [čeka](reports/05a-eidas2-eudi-claude.md) | [čeka](reports/05b-eidas2-eudi-perplexity.md) | — |
@@ -44,3 +44,4 @@ research/
 | # | Tema | Podudarnost | Ključni nalaz |
 |---|------|-------------|---------------|
 | 01 | Certilia Mobile.id | **82/100** | Slažu se na temeljnim činjenicama (AKD, OIDC, OIB u JWT-u, cijena, eIDAS). Razilaze se na tehničkim detaljima (algoritam potpisa, nonce podrška) koje Claude izvodi iz WSO2 IS identifikacije a Perplexity ostavlja nepoznatima. |
+| 02 | Lančana RSA/P-256 verifikacija | **62/100** | **Kritično proturječje:** RSA-2048 gas — Claude kaže ~25-35K, Perplexity kaže ~1,5-2,5M (50x razlika). Perplexity pouzdaniji (citira benchmarkove). Oba se slažu: izvedivo na Gnosisu, P-256 jeftiniji, ZK alternativa održiva. |
