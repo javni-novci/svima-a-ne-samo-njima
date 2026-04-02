@@ -1,7 +1,7 @@
-# Zapis arhitektonskih odluka i model prijetnji
+# Zapis arhitektonskih odluka
 
 **Projekt:** javni-novci / svima-a-ne-samo-njima
-**Verzija:** v0.2-nacrt
+**Verzija:** v0.4-nacrt
 **Status:** Iteracija — poziv na tehničku recenziju
 
 ---
@@ -12,9 +12,10 @@
 2. [ADR-001: Arhitektura trezora i tok sredstava](#2-adr-001-arhitektura-trezora-i-tok-sredstava)
 3. [ADR-002: Verifikacija identiteta i OAuth2 tok](#3-adr-002-verifikacija-identiteta-i-oauth2-tok)
 4. [ADR-003: Izbor mreže i korisničko iskustvo s gorivom](#4-adr-003-izbor-mreže-i-korisničko-iskustvo-s-gorivom)
-5. [Analiza prijetnji (model prijetnji)](#5-analiza-prijetnji-model-prijetnji)
-6. [Arhitektura pametnih ugovora](#6-arhitektura-pametnih-ugovora)
-7. [Neriješena pitanja i sljedeći koraci](#7-neriješena-pitanja-i-sljedeći-koraci)
+5. [ADR-004: Privatnost lančanih podataka](#5-adr-004-privatnost-lančanih-podataka)
+6. [Model prijetnji](#6-model-prijetnji)
+7. [Arhitektura pametnih ugovora](#7-arhitektura-pametnih-ugovora)
+8. [Centralni registar otvorenih pitanja](#8-centralni-registar-otvorenih-pitanja)
 
 ---
 
@@ -30,7 +31,7 @@
 | Trezor | Safe (bivši Gnosis Safe) | Višepotpisno upravljanje sredstvima |
 | Identitetni token | Neprenosivi token identiteta (SBT) | Neprenosiva lančana značka verificiranog građanina |
 | Pozadinski sustav | Node.js | OIDC poštar — nema Web3 ključeve |
-| Posrednik | Gelato / Biconomy (ERC-4337) | Kovanje SBT-a bez goriva za nove korisnike |
+| Posrednik | Gelato / Biconomy (ERC-4337) | Kovanje SBT-a bez goriva za nove korisnike (vidi Q8) |
 
 ### Temeljno načelo
 
@@ -41,6 +42,13 @@
 - Klijent ne može zaobići poslužitelj — ne može sam dobiti JWT bez `client_secret` stražnjeg kanala.
 - Pametni ugovor ne vjeruje nikome — sam verificira JWT kriptografski.
 
+### Ključna ograničenja privatnosti
+
+**UPOZORENJE:** Ovaj sustav još NE jamči potpunu privatnost na lancu. Detaljan pregled problema i rješenja: [privatnost.md](privatnost.md). Sažetak:
+
+- **Faza 1:** Selektivno prosljeđivanje JWT-a minimizira izloženost, ali `identityHash` u pohrani ostaje pseudonimni identifikator (GDPR rizik — vidi [pravna-analiza.md](pravna-analiza.md)).
+- **Faza 2+:** Nullifier pristup eliminira vezu između identiteta i lančanih podataka.
+
 ```
 +------------------+     OIDC      +--------------------+     S2S      +----------------+
 |                  | -- nonce -->  |                    | ----------> |                |
@@ -50,7 +58,7 @@
 |   skrbi)         |               |                    |             |                |
 +--------+---------+               +--------------------+             +----------------+
          |
-         |  claimCertiliaSBT(jwt)
+         |  claimCertiliaSBT(jwtProof)
          v
 +---------------------------+          +---------------------------+
 |  CertiliaSBT.sol          |          |  Safe trezor              |
@@ -67,52 +75,34 @@
 
 Podcast tržište prima uplate od korisnika u EURe. Sredstva se moraju podijeliti između kreatora (90%) i platforme (10%). Trebamo odlučiti kako strukturirati tok sredstava.
 
-### Razmatrane opcije
+### Kvantitativna matrica
 
-#### Opcija A: Monolitni Safe trezor (ODBAČENO)
+| Metrika (težina) | A: Monolitni Safe | B: Razdjelnik plaćanja | C: Zodiac modul dopuštenja |
+|-------------------|--------------------|------------------------|---------------------------|
+| Sigurnost i odsutnost povjerenja (40%) | 30 — sva sredstva na jednom mjestu, kvorum potpisnika je SPOF | 85 — kreatorova sredstva nikad u našem trezoru, atomičnost | 50 — sredstva pomiješana, modul dodaje napadačku površinu |
+| Korisničko iskustvo (20%) | 20 — svaka isplata čeka M-od-N potpis | 80 — automatska isplata, bez čekanja | 70 — automatske male isplate, ali sa ograničenjima |
+| Gorivo i mrežna učinkovitost (20%) | 30 — Safe transakcije troše višestruko više goriva | 75 — jedan split = jedan poziv ugovora | 60 — Safe overhead + modul overhead |
+| Skalabilnost i nadogradivost (20%) | 20 — svaka mikrotransakcija = potpisivanje | 70 — linearna konfiguracija po kreatoru | 55 — limiti zahtijevaju stalno kalibriranje |
 
-Sva sredstva (uplate korisnika, zarada kreatora, platformske naknade) ulaze u jedan Safe višepotpisni novčanik. Potpisnici odobravaju svaku isplatu.
-
-**Prednosti:**
-- Jednostavna implementacija — jedan ugovor, jedan trezor.
-- Potpuna kontrola potpisnika nad svim sredstvima.
-
-**Nedostaci:**
-- **Usko grlo:** Svaka mikrotransakcija (npr. 2 EURe za epizodu podcasta) zahtijeva M-od-N potpis. Neskalabilno.
-- **Meta za napadače:** Sva sredstva na jednoj adresi. Ako kompromitiramo kvorum potpisnika, gubimo SVE.
-- **Računovodstvena noćna mora:** Nemoguće razlikovati korisničke depozite od platformske zarade bez izvanlanačnog knjigovodstva.
-- **Trošak goriva:** Svaka Safe transakcija troši višestruko više goriva od običnog prijenosa.
-
-#### Opcija B: Razdjelnik plaćanja / 0xSplits (ODABRANO)
-
-Svaka uplata prolazi kroz automatski razdjelni ugovor koji u istoj transakciji usmjerava sredstva na predodređene adrese.
-
-**Prednosti:**
-- **Atomičnost:** Uplata se dijeli u jednom koraku. Nema stanja "sredstva zapela u prijenosu".
-- **Nema ručne intervencije:** Kreator prima svoj udio automatski. Nema čekanja na odobrenje potpisnika.
-- **Izolacija rizika:** Platformski Safe drži samo 10% prihoda. Kreatorova sredstva nikada nisu u našem trezoru.
-- **Provjerljivost:** Svaka raspodjela je lančano vidljiva. Bilo tko može verificirati da kreator prima točno 90%.
-
-**Nedostaci:**
-- Kompleksnija inicijalna konfiguracija (postavljanje razdjelnika po kreatoru ili korištenje 0xSplits v2 s distribucijom na zahtjev).
-- Kreator mora sam čuvati svoj novčanik (odgovornost vlastite skrbi).
-
-#### Opcija C: Zodiac modul dopuštenja (ALTERNATIVA)
-
-Safe sa Zodiac modulom koji dozvoljava automatske male isplate do određenog limita bez potpisnika.
-
-**Prednosti:**
-- Sva sredstva i dalje prolaze kroz Safe — jedinstven revizijski trag.
-- Automatske isplate do X EURe dnevno bez kvoruma potpisnika.
-
-**Nedostaci:**
-- Sredstva i dalje pomiješana u jednom trezoru (rizik mete za napadače ostaje).
-- Zodiac modul dodaje napadačku površinu na Safe.
-- Limiti se moraju pažljivo kalibrirati — previše restriktivno = usko grlo, previše liberalno = rizik iscrpljivanja.
+| Opcija | Ponderirani prosjek |
+|--------|---------------------|
+| A: Monolitni Safe | **27** |
+| B: Razdjelnik plaćanja | **80** |
+| C: Zodiac modul dopuštenja | **56** |
 
 ### Odluka
 
-**Opcija B — Razdjelnik plaćanja** za korisničke uplate. Platformski Safe prima samo svoj udio (10%). Za budućnost, Zodiac modul dopuštenja može služiti za operativne troškove platforme iz Safe-a.
+**Opcija B — Razdjelnik plaćanja.**
+
+### Sigurnosne implikacije
+
+- Kreator mora sam čuvati novčanik (odgovornost vlastite skrbi).
+- Adrese primatelja moraju biti nepromjenjive u razdjelniku ILI promjenjive samo od strane Safe administratora.
+- **Zaokruživanje:** Cjelobrojno dijeljenje u Solidity-u zaokružuje prema dolje. Za iznose koji nisu djeljivi bez ostatka, prašina (ostatak od dijeljenja) ostaje u razdjelniku. Trebamo `sweep()` funkciju kojom Safe periodički povlači akumuliranu prašinu, ili koristiti bazne točke (bips) za preciznost.
+
+### Neriješeno
+
+- Q6: 0xSplits v2 (revidirano, dokazano) ili vlastiti razdjelnik (potpuna kontrola)? Zahtijeva ADR.
 
 ### Tok sredstava (dokaz koncepta)
 
@@ -144,39 +134,19 @@ Korisnik
 
 Moramo povezati hrvatski pravni identitet (Certilia/eIDAS) s Ethereum adresom. Ključni problem: **Certilia koristi RSA/X.509 potpise (eIDAS standard), a EVM koristi secp256k1.** Safe ne može nativno čitati Certilia potpise.
 
-### Razmatrane opcije
+### Kvantitativna matrica
 
-#### Opcija A: Svemoćni pozadinski sustav (ODBAČENO)
+| Metrika (težina) | A: Svemoćni pozadinski sustav | B: OIDC stražnji kanal + samokovanje |
+|-------------------|-------------------------------|--------------------------------------|
+| Sigurnost i odsutnost povjerenja (40%) | 10 — katastrofalna jedna točka kvara, server = bog | 85 — server kompromis = samo uskrata usluge |
+| Korisničko iskustvo (20%) | 90 — Web2 prijava, korisnik ne vidi blockchain | 45 — treba novčanik, razumijevanje potpisivanja |
+| Gorivo i mrežna učinkovitost (20%) | 85 — obično kovanje, jeftino | 40 — RSA verifikacija ~2M+ goriva (ali Gnosis!) |
+| Skalabilnost i nadogradivost (20%) | 30 — server je usko grlo i regulatorni rizik (skrbnik) | 80 — svaki korisnik sam kuje, nema uskog grla |
 
-Node.js poslužitelj drži glavni Web3 privatni ključ. Kada korisnik prođe Certilia autentikaciju, poslužitelj potpisuje lančanu atestaciju i kuje SBT u ime korisnika.
-
-**Prednosti:**
-- Trivijalna implementacija — standardni Web2 auth + transakcija na strani poslužitelja.
-- Korisnik ne treba razumjeti blockchain.
-
-**Nedostaci:**
-- **Katastrofalna jedna točka kvara.** Kompromitiran poslužitelj = napadač može:
-  - Kovati neograničen broj lažnih SBT-ova (lažni identiteti).
-  - Trošiti sredstva iz trezora ako je ključ poslužitelja potpisnik na Safe-u.
-  - Opozvati legitimne SBT-ove.
-- Proturječje cijeloj filozofiji sustava bez povjerenja.
-- Regulatorni rizik — poslužitelj koji drži ključeve je de facto skrbnik.
-
-#### Opcija B: OIDC stražnji kanal + samokovanje SBT-a (ODABRANO)
-
-Poslužitelj je isključivo OIDC poštar. Klijent sam kuje svoj SBT prosljeđujući JWT pametnom ugovoru koji ga kriptografski verificira.
-
-**Prednosti:**
-- **Kompromis poslužitelja ne ugrožava sredstva niti identitete.** Poslužitelj nema Web3 ključeve i ne može falsificirati AKD potpis.
-- **Korisnik zadržava suverenitet.** Privatni ključ nikada ne napušta preglednik/novčanik.
-- **Matematički dokaz:** Pametni ugovor sam verificira — nema koraka "vjeruj poslužitelju".
-- **Provjerljivost:** Bilo tko može reproducirati verifikaciju prosljeđujući isti JWT ugovoru.
-
-**Nedostaci:**
-- **Lančana JWT verifikacija je skupa.** RSA-2048 verifikacija troši ~2M+ goriva na EVM-u. Na Ethereum glavnoj mreži ovo je neprihvatljivo (ali na Gnosisu je jeftino — vidi ADR-003).
-- **Kompleksnost pametnog ugovora.** Solidity nema nativne RSA/P-256 biblioteke — trebamo ih implementirati ili koristiti prekompajlirane ugovore.
-- **JWT istek.** Token ima kratki životni vijek (obično 5 min). Korisnik mora skovati SBT unutar tog prozora.
-- **Korisničko iskustvo.** Korisnik mora imati novčanik — veća barijera od Web2 prijave.
+| Opcija | Ponderirani prosjek |
+|--------|---------------------|
+| A: Svemoćni pozadinski sustav | **39** |
+| B: OIDC stražnji kanal + samokovanje | **68** |
 
 ### Odluka
 
@@ -216,15 +186,29 @@ Klijent (Preglednik)                  Poslužitelj (Node.js)            Certilia
        |                                    |                               |
        |                                    |  <-- Potpisani JWT ---------- |
        |                                    |                               |
-   7.  |  <-- neobrađeni JWT -------------- |                               |
+   7.  |  GET /auth/jwt/{sessionId}         |                               |
+       |  <-- JWT (jednokratno) ----------- |                               |
        |                                    |                               |
-   8.  |  claimCertiliaSBT(jwt)             |                               |
+   8.  |  claimCertiliaSBT(jwtProof)        |                               |
        |  --> Gnosis lanac pametni ugovor   |                               |
        |      Verificira JWT potpis         |                               |
        |      Provjerava nonce == msg.sender|                               |
        |      Kuje SBT na 0xABC...         |                               |
        |                                    |                               |
 ```
+
+### Korak 7 — prijenos JWT-a klijentu (POJAŠNJENO)
+
+Standardni OIDC stražnji kanal vraća JWT isključivo poslužitelju. Klijent ga treba za lančanu verifikaciju. Mehanizam prijenosa:
+
+1. Poslužitelj sprema JWT u privremenu pohranu s ključem `sessionId` i rokom trajanja (5 min, kao i sam JWT).
+2. Klijent dohvaća JWT putem `GET /auth/jwt/{sessionId}` — jednokratna krajnja točka koja briše JWT nakon prvog čitanja.
+3. Prijenos zaštićen: HTTPS + CORS ograničenja + jednokratno čitanje + automatski istek.
+
+**Sigurnosna analiza ovog koraka:**
+- MITM: HTTPS eliminira presretanje u prijenosu.
+- XSS: Ako napadač ima XSS na našoj domeni, može dohvatiti JWT — ali JWT nonce je vezan za korisnikovu adresu, pa napadač ne može skovati SBT na svoju adresu (ugovor provjerava `nonce == msg.sender`).
+- Istek: JWT + pohrana na poslužitelju istječu paralelno. Nema trajnog skladištenja.
 
 ### Zašto svaki korak postoji
 
@@ -236,8 +220,18 @@ Klijent (Preglednik)                  Poslužitelj (Node.js)            Certilia
 | 4 | Klijent verificira nonce u URL-u | Zlonamjerni poslužitelj mogao bi podmetnuti tuđu adresu |
 | 5 | Biometrička autentikacija | Nema dokaza da je to pravi korisnik |
 | 6 | Autorizacijski kôd ide na poslužitelj | Klijent ne može sam zamijeniti kôd za JWT |
-| 7 | Poslužitelj prosljeđuje JWT klijentu | Klijent ne bi mogao sam skovati SBT |
+| 7 | Poslužitelj jednokratno izlaže JWT klijentu | Klijent ne bi mogao sam skovati SBT |
 | 8 | Lančana verifikacija + kovanje | Nema dokaza identiteta bez povjerenja |
+
+### Sigurnosne implikacije
+
+- Korak 7 uvodi novu krajnju točku na poslužitelju — napadačka površina. Ublažavanje: jednokratno čitanje, automatski istek, CORS.
+- JWT u prijenosu je izložen XSS-u — ali nonce vezanje čini presretnuti JWT beskorisnim za napadača.
+
+### Neriješeno
+
+- Q3: Podržava li Certilia prilagođeni `nonce`? Bez toga, cijeli tok propada.
+- Q9: Treba li korak 7 koristiti WebSocket umjesto pollinga za bolje korisničko iskustvo?
 
 ---
 
@@ -280,15 +274,31 @@ Korisnik                  Skupljač (Gelato/Biconomy)       Gnosis lanac
 ```
 
 **Ograničenja platitelja:**
-- Platitelj mora imati popis dopuštenih ili ograničenje po adresi (1 kovanje SBT-a bez goriva po adresi).
-- Bez ograničenja, napadač može slati jeftine korisničke operacije i iscrpiti fond platitelja.
+- Ograničenje: 1 kovanje bez goriva po Certilia identitetu (ne po adresi — adrese se mogu generirati besplatno, ali Certilia identiteti ne).
+- Dnevni proračunski limit platitelja.
 - Proračun platitelja je operativni trošak platforme — financira se iz platformskog Safe-a.
+
+### Neriješeno
+
+- Q8: ERC-4337 nasuprot Gelato posredniku? Zahtijeva ADR s matricom bodovanja.
 
 ---
 
-## 5. Model prijetnji
+## 5. ADR-004: Privatnost lančanih podataka
 
-Potpuna analiza prijetnji izdvojena je u zasebni dokument: **[model-prijetnji.md](model-prijetnji.md)**
+Potpuna analiza izdvojena u: **[privatnost.md](privatnost.md)**
+
+Sažetak odluke: **Opcija C (hibridni pristup)**
+- Faza 1: Selektivno prosljeđivanje (Opcija A) — na lanac idu samo potpis + sažetak + nonce + hash(sub). Osobni podaci NE idu u calldata.
+- Faza 2+: Nullifier pristup (Opcija B) — potpuna privatnost putem ZK dokaza.
+
+**Kritično za arhitekturu:** Ova odluka zahtijeva da CertiliaSBT ugovor bude dizajniran s **zamjenjivom verifikacijskom logikom** od prvog dana. Vidi odjeljak 7.1.
+
+---
+
+## 6. Model prijetnji
+
+Potpuna analiza izdvojena u: **[model-prijetnji.md](model-prijetnji.md)**
 
 Sadrži:
 - 15 identificiranih napada (T1-T15) klasificiranih po ozbiljnosti
@@ -298,97 +308,167 @@ Sadrži:
 
 ---
 
-## 6. Arhitektura pametnih ugovora
+## 7. Arhitektura pametnih ugovora
 
-### 6.1. CertiliaSBT.sol — Specifikacija
+### 7.1. CertiliaSBT.sol — Specifikacija
 
 ```
-CertiliaSBT (ERC-721 + neprenosivo proširenje)
+CertiliaSBT (ERC-721 + ERC-5192 neprenosivo sučelje)
 |
 |-- Pohrana
-|   |-- certiliaPublicKey: bytes        // AKD OIDC javni ključ
-|   |-- admin: address                  // Safe višepotpisna adresa
-|   |-- identityClaimed: mapping(bytes32 => bool)
+|   |-- certiliaPublicKeys: mapping(bytes32 => bool)  // VIŠE KLJUČEVA (rotacija!)
+|   |-- admin: address                                 // Safe višepotpisna adresa
+|   |-- identityClaimed: mapping(bytes32 => address)   // hash(sub) => SBT adresa
 |   |-- usedJWTs: mapping(bytes32 => bool)
 |   |-- revokedTokens: mapping(uint256 => bool)
+|   |-- verifierVersion: uint8                         // za migraciju A→B
 |
 |-- Funkcije
-|   |-- claimCertiliaSBT(bytes jwt) external
-|   |   |-- Dekodira JWT zaglavlje + sadržaj + potpis
-|   |   |-- Verificira potpis koristeći certiliaPublicKey
+|   |-- claimCertiliaSBT(bytes jwtProof) external
+|   |   |-- Dekodira dokaz (format ovisi o verifierVersion)
+|   |   |-- Verificira potpis koristeći certiliaPublicKeys
 |   |   |-- Provjerava: jwt.nonce == msg.sender
 |   |   |-- Provjerava: jwt.exp > block.timestamp
 |   |   |-- Provjerava: !usedJWTs[hash(jwt)]
 |   |   |-- Provjerava: !identityClaimed[hash(jwt.sub)]
 |   |   |-- Kuje SBT na msg.sender
 |   |
-|   |-- revokeSBT(uint256 tokenId) external onlyAdmin
-|   |-- updatePublicKey(bytes newKey) external onlyAdmin
-|   |-- isVerified(address wallet) external view returns (bool)
+|   |-- resetIdentityClaim(bytes32 identityHash) external onlyAdmin
+|   |   |-- Briše identityClaimed[identityHash]
+|   |   |-- Dozvoljava korisniku ponovno kovanje na novoj adresi
+|   |   |-- MORA se pozvati NAKON revokeSBT() na staroj adresi
 |   |
-|   |-- transferFrom() --> POGREŠKA (neprenosiv)
-|   |-- approve()      --> POGREŠKA (neprenosiv)
+|   |-- revokeSBT(uint256 tokenId) external onlyAdmin
+|   |-- addPublicKey(bytes32 keyHash) external onlyAdmin
+|   |-- removePublicKey(bytes32 keyHash) external onlyAdmin
+|   |-- isVerified(address wallet) external view returns (bool)
+|   |-- locked(uint256 tokenId) external view returns (bool)  // ERC-5192
+|   |
+|   |-- transferFrom() --> POGREŠKA (neprenosiv — ERC-5192)
+|   |-- approve()      --> POGREŠKA (neprenosiv — ERC-5192)
 ```
 
-### 6.2. Safe integracija
+**Promjene u odnosu na v0.3:**
+
+1. **Višestruki ključevi:** `certiliaPublicKeys` je sada mapa umjesto jednog bajt-niza. Podržava preklapanje pri rotaciji — oba ključa (stari i novi) mogu biti aktivna istovremeno. Safe administrator dodaje novi ključ PRIJE nego AKD povuče stari.
+
+2. **`resetIdentityClaim()`:** Rješava problem "trajne zabrane". Kada korisnik izgubi novčanik:
+   - Safe opoziva SBT na staroj adresi (`revokeSBT`).
+   - Safe briše identitetnu tvrdnju (`resetIdentityClaim`).
+   - Korisnik se ponovno autenticira s Certilijom i kuje novi SBT na novoj adresi.
+   - Atomičnost: u budućnosti oba koraka mogu ići u jednu Safe transakciju.
+
+3. **`verifierVersion`:** Priprema za migraciju s Opcije A (selektivno prosljeđivanje) na Opciju B (nullifier). Verzija 1 = JWT verifikacija. Verzija 2 = ZK verifikator. Logika `claimCertiliaSBT` čita verziju i poziva odgovarajući interni verifikator.
+
+4. **ERC-5192:** Umjesto prilagođenog `transferFrom() → revert`, koristimo standardizirano ERC-5192 sučelje. Kompatibilno s alatima koji prepoznaju neprenosive tokene (OpenSea, tržišta, indexeri).
+
+### 7.2. Safe integracija
 
 ```
 Safe trezor (Platforma)
 |
-|-- Zodiac modul uloga
+|-- Zodiac modul uloga (FAZA 2 — ne za dokaz koncepta)
 |   |-- Uloga: VERIFICIRANI_KREATOR
 |   |-- Uvjet: CertiliaSBT.isVerified(pozivatelj) == true
 |   |-- Dozvole: Može inicirati isplatu do X EURe
 |
-|-- Zodiac stražar (opcija)
+|-- Zodiac stražar (opcija, FAZA 2)
 |   |-- Kuka prije transakcije
 |   |-- Provjerava da primatelj isplate ima validan SBT
 ```
 
-### 6.3. Razdjelnik plaćanja
+**Pojašnjenje:** Za fazu 1 (dokaz koncepta), Safe funkcionira kao obični višepotpisni novčanik (2/3) za operativne troškove platforme. Zodiac moduli su odgođeni za fazu 2 kada DAO upravljanje postaje relevantno.
+
+### 7.3. Razdjelnik plaćanja
 
 ```
 RazdjelnikPlacanja (po kreatoru ili 0xSplits v2)
 |
 |-- Konfiguracija
 |   |-- primatelji: [adresaKreatora, platformskiSafe]
-|   |-- udjeli: [90, 10]  // bazne točke: [9000, 1000]
+|   |-- udjeli: [9000, 1000]  // bazne točke (ukupno 10000)
 |
 |-- Funkcije
 |   |-- split(uint256 iznos) external
-|   |   |-- EURe.transferFrom(msg.sender, kreator, iznos * 90 / 100)
-|   |   |-- EURe.transferFrom(msg.sender, platformskiSafe, iznos * 10 / 100)
+|   |   |-- uKreatoru = iznos * 9000 / 10000
+|   |   |-- uPlatformu = iznos - uKreatoru   // ostatak ide platformi (nema gubitka prašine)
+|   |   |-- EURe.transferFrom(msg.sender, kreator, uKreatoru)
+|   |   |-- EURe.transferFrom(msg.sender, platformskiSafe, uPlatformu)
 ```
+
+**Promjena:** Zaokruživanje riješeno oduzimanjem — `uPlatformu = iznos - uKreatoru`. Kreator uvijek dobiva zaokruženo prema dolje, a sva prašina ide platformi. Nijedan wei se ne gubi.
 
 ---
 
-## 7. Neriješena pitanja i sljedeći koraci
+## 8. Centralni registar otvorenih pitanja
 
-### Kritična (blokiraju implementaciju)
+Sva otvorena pitanja iz svih dokumenata, mapirana na faze i ovisnosti.
 
-| # | Pitanje | Kontekst |
-|---|---------|----------|
-| Q1 | Koji algoritam koristi Certilia za JWT potpis? RSA-2048, RSA-4096, P-256, ili nešto drugo? | Određuje koji prekompajlirani ugovor/biblioteku trebamo na Gnosisu. EIP-7212 pokriva P-256 ali ne RSA. Za RSA trebamo vlastitu implementaciju ili čekati prekompajlirani ugovor. |
-| Q2 | Što je `sub` tvrdnja u Certilia JWT-u? | Mora biti deterministički jedinstvena po građaninu (sažetak OIB-a ili ekvivalent). Ako se temelji na sesiji, Sybil zaštita ne radi. |
-| Q3 | Podržava li Certilia prilagođeni `nonce` parametar u OIDC zahtjevu? | Cijela arhitektura ovisi o mogućnosti slanja adrese novčanika kao nonce. Ako ne podržava, trebamo alternativni mehanizam vezanja. |
-| Q4 | Postoji li Certilia testno okruženje? | Bez testnog okruženja ne možemo razvijati bez korištenja pravih identiteta. |
+### Kritična (blokiraju fazu 1)
 
-### Važna (utječu na dizajn)
+| # | Pitanje | Izvor | Ovisnosti |
+|---|---------|-------|-----------|
+| Q1 | Koji algoritam koristi Certilia za JWT potpis? | architecture.md | Određuje verifikacijsku biblioteku |
+| Q2 | Što je `sub` tvrdnja u Certilia JWT-u? Je li deterministički jedinstvena po građaninu? | architecture.md | Sybil zaštita, privatnost.md hash problem |
+| Q3 | Podržava li Certilia prilagođeni `nonce` parametar? | architecture.md | Cijeli OIDC tok |
+| Q4 | Postoji li Certilia testno okruženje? | architecture.md | Razvoj bez pravih identiteta |
+| P4 | Je li hash(`sub`) "osobni podatak" po GDPR-u? Trebamo li DPIA? | privatnost.md, pravna-analiza.md | Faza 1 regulatorni rizik |
+| L1 | Zabranjuju li Certilia uvjeti korištenja prosljeđivanje JWT-a pametnim ugovorima? | pravna-analiza.md | Legalnost cijelog projekta |
 
-| # | Pitanje | Kontekst |
-|---|---------|----------|
-| Q5 | Koji je najjeftiniji način za lančanu RSA verifikaciju na Gnosisu? | Opcije: (a) vlastita Solidity RSA biblioteka (npr. adria0/SolRSA), (b) čekati izvorni prekompajlirani ugovor, (c) ZK dokaz izvan lanca + lančani verifikator. |
-| Q6 | 0xSplits v2 ili vlastiti razdjelnik? | 0xSplits je revidiran i dokazan, ali dodaje ovisnost. Vlastiti daje potpunu kontrolu. |
-| Q7 | Kako riješiti problem korisničkog iskustva s istekom JWT-a? | JWT živi ~5 min. Korisnik mora imati novčanik spreman i dovoljno brzo potpisati transakciju. Trebamo tok koji minimizira trenje. |
-| Q8 | ERC-4337 nasuprot Gelato posredniku za iskustvo bez goriva? | ERC-4337 je standard ali kompleksniji. Gelato je jednostavniji ali centraliziraniji. |
+### Važna (utječu na dizajn faze 1)
 
-### Istraživačka (dugoročno)
+| # | Pitanje | Izvor | Ovisnosti |
+|---|---------|-------|-----------|
+| Q5 | Najjeftiniji način za lančanu RSA verifikaciju na Gnosisu? | architecture.md | Ovisi o Q1 |
+| Q6 | 0xSplits v2 ili vlastiti razdjelnik? | architecture.md | Zahtijeva ADR |
+| Q8 | ERC-4337 nasuprot Gelato posredniku? | architecture.md | Zahtijeva ADR |
+| Q9 | Korak 7: Polling ili WebSocket za JWT dohvat? | architecture.md | UX |
+| L5 | Trebamo li CASP licencu? | pravna-analiza.md | HANFA upit |
+| E1 | Fiksni (90/10) ili DAO-upravljani postotak raspodjele? | ekonomski-model.md | Za fazu 1: fiksni. DAO tek u fazi 2. |
 
-| # | Pitanje | Kontekst |
-|---|---------|----------|
-| Q9 | ZK-SNARK za privatnost glasanja? | Trenutno je SBT javno vidljiv. Za glasanje možda trebamo ZK dokaz da osoba IMA SBT bez otkrivanja KOJI SBT/novčanik. |
-| Q10 | Višedržavna eIDAS podrška? | Certilia je samo za Hrvatsku. eIDAS standard pokriva cijelu EU. Možemo li generalizirati na druge države? |
-| Q11 | Obnova SBT-a nasuprot trajnosti? | Treba li SBT imati istek (npr. poklapa se s rokom osobne iskaznice) ili je trajan dok se ne opozove? |
+### Blokiraju fazu 2
+
+| # | Pitanje | Izvor | Ovisnosti |
+|---|---------|-------|-----------|
+| P1 | Koji ZK sustav? Groth16, PLONK, Halo2? | privatnost.md | Nullifier implementacija |
+| P2 | Može li se RSA/P-256 učinkovito implementirati u ZK krugu? | privatnost.md | Ovisi o Q1 |
+| P3 | Kako riješiti opozivost u nullifier modelu? | privatnost.md | ZK oporavak novčanika |
+
+### Istraživačka (faza 3+)
+
+| # | Pitanje | Izvor |
+|---|---------|-------|
+| Q10 | Višedržavna eIDAS podrška | architecture.md |
+| Q11 | SBT s istekom nasuprot trajnosti | architecture.md |
+| L4 | eIDAS 2.0 / EUDI utjecaj na arhitekturu | pravna-analiza.md |
+
+---
+
+## Dodatak: Sučelje za identitetnog pružatelja (apstrakcijski sloj)
+
+Za kompatibilnost s budućim EUDI novčanikom (eIDAS 2.0), sustav mora od prvog dana koristiti apstrakcijski sloj za identitetnog pružatelja:
+
+```
+Sučelje: IIdentityVerifier
+|
+|-- verifyProof(bytes proof, address claimer) returns (bool valid, bytes32 identityHash)
+|
+|-- Implementacija v1: CertiliaJWTVerifier
+|   |-- Parsira JWT, verificira RSA/P-256 potpis, provjerava nonce
+|
+|-- Implementacija v2: CertiliaNullifierVerifier (faza 2)
+|   |-- Verificira ZK dokaz, provjerava nullifier jedinstvenost
+|
+|-- Implementacija v3: EUDIVerifier (faza 3)
+|   |-- Verificira W3C Verifiable Credential iz EUDI novčanika
+```
+
+CertiliaSBT.sol poziva `IIdentityVerifier(verifierAddress).verifyProof(...)` umjesto hardkodirane JWT logike. Safe administrator može postaviti novu implementaciju verifikatora bez zamjene SBT ugovora.
+
+**Ovo rješava:**
+- Migraciju Opcija A → Opcija B bez novog ugovora.
+- Buduću podršku za EUDI bez novog ugovora.
+- Višedržavnu eIDAS podršku (različiti verifikatori po državi).
 
 ---
 

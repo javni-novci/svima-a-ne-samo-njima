@@ -37,9 +37,16 @@ Dokazati da **Certilia identitet + lančano upravljanje sredstvima** funkcionira
 ### Tehniški zahtjevi
 
 - Lančana RSA ili P-256 verifikacija na Gnosis lancu.
-- Selektivno prosljeđivanje JWT-a (Opcija A iz privatnost.md) — minimalan skup podataka u calldata.
-- Gasless kovanje SBT-a za nove korisnike.
+- Selektivno prosljeđivanje JWT-a (Opcija A iz [privatnost.md](privatnost.md)) — minimalan skup podataka u calldata.
+- Kovanje SBT-a bez goriva za nove korisnike (ERC-4337 platitelj — vidi Q8).
 - Osnovna web aplikacija s integriranim novčanikom.
+- CertiliaSBT ugovor s ERC-5192 sučeljem i `IIdentityVerifier` apstrakcijskim slojem (vidi [architecture.md](architecture.md) odjeljak 7.1 i Dodatak).
+- `resetIdentityClaim()` za oporavak novčanika (vidi [architecture.md](architecture.md) odjeljak 7.1).
+- Višestruki ključevi u ugovoru za podršku rotacije Certilia ključa.
+
+### Odluke koje moraju biti donesene PRIJE početka faze 1
+
+Sve iz centralnog registra otvorenih pitanja u [architecture.md](architecture.md) odjeljak 8, kategorija "Kritična".
 
 ### Metrike uspjeha
 
@@ -160,7 +167,8 @@ Faza 1                          Faza 2                          Faza 3
 
 ### Kritičan put
 
-1. **Q1-Q4 iz architecture.md** moraju biti riješeni prije početka faze 1.
-2. **Calldata privatnost** (privatnost.md) mora biti riješena prije faze 1 (minimalno Opcija A).
-3. **ZK privatnost** mora biti riješena prije faze 2 (Opcija B iz privatnost.md).
-4. **eIDAS 2.0 praćenje** mora početi odmah — EUDI novčanik može promijeniti cijelu arhitekturu.
+1. **Q1-Q4 i L1 iz [architecture.md](architecture.md)** moraju biti riješeni prije početka faze 1.
+2. **Calldata privatnost** ([privatnost.md](privatnost.md)) mora biti riješena prije faze 1 (minimalno Opcija A).
+3. **GDPR procjena** ([pravna-analiza.md](pravna-analiza.md) L1-L3, P4) — hash(sub) u pohrani zahtijeva DPIA.
+4. **ZK privatnost** mora biti riješena prije faze 2 (Opcija B iz [privatnost.md](privatnost.md)).
+5. **eIDAS 2.0 praćenje** mora početi odmah — EUDI novčanik može promijeniti cijelu arhitekturu. Zato architecture.md definira `IIdentityVerifier` apstrakcijski sloj od prvog dana.

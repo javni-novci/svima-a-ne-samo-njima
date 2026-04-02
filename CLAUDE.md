@@ -52,7 +52,7 @@ Svaka prihvaćena odluka mora biti zapisana kao ADR sa sljedećom strogom strukt
 
 ## KLJUČNI DOKUMENTI
 
-- `README.md` — Tehnički pregled v0.3, vizija i pregled arhitekture.
+- `README.md` — Tehnički pregled v0.4, vizija i pregled arhitekture.
 - `docs/architecture.md` — ADR-ovi (trezor, identitet, mreža), specifikacije pametnih ugovora, otvorena pitanja.
 - `docs/privatnost.md` — ADR-004: calldata curenje, nullifier pristup, ZK opcije, GDPR implikacije.
 - `docs/model-prijetnji.md` — 15 napada (T1-T15), stabla napada, matrica rizika, prioritetni popis ublažavanja.

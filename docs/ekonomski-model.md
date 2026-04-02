@@ -57,7 +57,9 @@ Platitelj goriva sponzorira prvu transakciju (kovanje SBT-a) za svakog novog kor
 | Ukupni godišnji trošak platitelja | 10-500 USD |
 | Izvor financiranja | 30% od platformske provizije |
 
-**Zaključak:** Na Gnosis lancu troškovi platitelja su zanemarivi. Čak i pri 100.000 korisnika, godišnji trošak ne prelazi 5.000 USD. Ovo NIJE problem održivosti — za razliku od Ethereum glavne mreže gdje bi isti trošak bio 50.000-500.000 USD.
+**Zaključak:** Na Gnosis lancu troškovi platitelja su zanemarivi za operativni proračun. Čak i pri 100.000 korisnika, godišnji trošak ne prelazi 5.000 USD. Za razliku od Ethereum glavne mreže (50.000-500.000 USD).
+
+**UPOZORENJE:** Ovo NE znači da je financijski rizik platforme zanemariv. Monerium (izdavač EURe) ima MiCA ovlast zamrznuti tokene na bilo kojoj adresi — vidi [pravna-analiza.md](pravna-analiza.md) odjeljak 3 za detalje. Ublažavanje: držati minimalne zalihe u ugovorima (razdjelnik isplaćuje odmah), razmotriti podršku za alternativne stabilne tokene.
 
 ### Zaštita od zlouporabe
 

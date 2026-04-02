@@ -117,7 +117,20 @@ Nekoliko projekata rješava problem "dokaza jedinstvenosti" (proof of personhood
 
 ---
 
-## 5. Tehnologije za potencijalno usvajanje
+## 5. Veza s privatnošću
+
+Naš ZK pristup (nullifier, Opcija B iz [privatnost.md](privatnost.md)) je najsličniji World ID-ovom Semaphore protokolu, ali s ključnom razlikom:
+
+| Aspekt | World ID / Semaphore | Naš nullifier pristup |
+|--------|---------------------|----------------------|
+| Izvor identiteta | Biometrija (Orb) | Državni eIDAS (Certilia) |
+| Pravna valjanost dokaza | Nema | Da (eIDAS regulativa) |
+| ZK krug | Dokazan, revidiran, u produkciji | Trebamo prilagoditi za RSA/P-256 JWT |
+| Nullifier kontekst | Globalni (jedan po osobi) | Po primjeni (glasanje, tržište...) |
+
+**Preporuka:** Koristiti Semaphore biblioteku kao temelj, ali zamijeniti biometrijski ulaz s Certilia JWT dokazom. Vidi privatnost.md P1-P2 za otvorena pitanja o ZK kompatibilnosti s RSA.
+
+## 6. Tehnologije za potencijalno usvajanje
 
 | Tehnologija | Izvor | Primjena u našem projektu |
 |-------------|-------|--------------------------|

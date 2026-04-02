@@ -71,8 +71,8 @@ Korisnik (Preglednik)
 ## Sigurnost i privatnost (privatnost od temelja)
 
 * **Nema jedne točke kvara:** Ako netko hakira naš Node.js poslužitelj, ne može ukrasti sredstva iz trezora jer poslužitelj nema pristup privatnim ključevima niti može lažirati Certilia (AKD) potpis.
-* **Nema osobnih podataka na lancu:** SBT služi samo kao kriptografska "značka". Ime, prezime i OIB ostaju privatni.
-* **Opozivost:** U slučaju gubitka mobitela ili isteka osobne iskaznice, DAO/Safe može opozvati SBT na lancu.
+* **Minimalni podaci na lancu:** Na lanac idu samo kriptografski potpis i sažetak — osobni podaci (ime, OIB) nikada ne napuštaju JWT koji se ne sprema. Dugoročno prelazimo na ZK nullifier pristup za potpunu privatnost (vidi [privatnost.md](docs/privatnost.md)).
+* **Opozivost i oporavak:** U slučaju gubitka mobitela ili ključeva, Safe može opozvati SBT i omogućiti ponovno kovanje na novoj adresi.
 
 ## Od dokaza koncepta do državnog proračuna
 
@@ -93,7 +93,7 @@ Ovaj repozitorij trenutno razvija infrastrukturu za tržište. Ali zamislite bud
 
 ## Kako doprinijeti (poziv na raspravu)
 
-Ovo je radni dokument (v0.2). Prije nego napišemo ijednu liniju koda, želimo razbiti ovu arhitekturu na komade i pronaći sve potencijalne mane.
+Ovo je radni dokument (v0.4). Prije nego napišemo ijednu liniju koda, želimo razbiti ovu arhitekturu na komade i pronaći sve potencijalne mane.
 
 **Otvorene teme za raspravu u GitHub pitanjima:**
 
