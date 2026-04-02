@@ -12,7 +12,7 @@ Svaka tema istražena iz dva (ili više) neovisna izvora radi križne provjere �
 | 04 | 0xSplits i razdjelnici | VAŽNO | [prompt](prompts/04-0xsplits-gnosis.md) | [gotovo](reports/04a-0xsplits-gnosis-claude.md) | [gotovo](reports/04b-0xsplits-gnosis-perplexity.md) | [91/100](compare/04-0xsplits-gnosis.md) |
 | 05 | eIDAS 2.0 / EUDI novčanik | VAŽNO | [prompt](prompts/05-eidas2-eudi.md) | [gotovo](reports/05a-eidas2-eudi-claude.md) | [gotovo](reports/05b-eidas2-eudi-perplexity.md) | [85/100](compare/05-eidas2-eudi.md) |
 | 06 | GDPR i hashirani identifikatori | VAŽNO | [prompt](prompts/06-gdpr-hash-identifikatori.md) | [gotovo](reports/06a-gdpr-hash-claude.md) | [gotovo](reports/06b-gdpr-hash-perplexity.md) | [93/100](compare/06-gdpr-hash.md) |
-| 07 | Monerium EURe na Gnosisu | VAŽNO | [prompt](prompts/07-monerium-eure-gnosis.md) | [čeka](reports/07a-monerium-eure-claude.md) | [čeka](reports/07b-monerium-eure-perplexity.md) | — |
+| 07 | Monerium EURe na Gnosisu | VAŽNO | [prompt](prompts/07-monerium-eure-gnosis.md) | [gotovo](reports/07a-monerium-eure-claude.md) | [gotovo](reports/07b-monerium-eure-perplexity.md) | [92/100](compare/07-monerium-eure.md) |
 
 ## Struktura
 
@@ -49,3 +49,4 @@ research/
 | 04 | 0xSplits i razdjelnici | **91/100** | Dosad najviša. 0xSplits V2 PushSplit potvrđen na Gnosisu, revidiran, EURe kompatibilan, SDK zreo. EURe blacklist fallback u Warehouse rješava T13. ADR Q6 može se zatvoriti. |
 | 05 | eIDAS 2.0 / EUDI | **85/100** | 20 zajedničkih činjenica. P-256 primarni algoritam (potvrđuje naš dizajn). Nema EUDI nullifiera — moramo sami. SD-JWT-VC format za online (ne klasični JWT). Certilia koegzistira. ARF verzija nepotvrđena (Claude v2.8.0 vs Perplexity v1.2.0). |
 | 06 | GDPR i hashirani identifikatori | **93/100** | **JEDNOGLASNI:** hash OIB-a = osobni podatak. DPIA obvezan. Privola neprihvatljiva za neizbrisivi blockchain. ZK nullifier značajno usklađeniji. Fundamentalno mijenja prioritete: nullifier mora biti u fazi 1, ne fazi 2. |
+| 07 | Monerium EURe | **92/100** | 25 zajedničkih činjenica. EURe optimalan za EUR platformu. Blacklist potvrđen (LCX presedan). 0xSplits V2 kompatibilan. SEPA rampa bez naknada. Gnosis Pay battle-tested. Pausable = novi rizik. |
