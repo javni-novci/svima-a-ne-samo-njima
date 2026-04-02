@@ -1,0 +1,5 @@
+# Platforme za sponzorstvo — GitHub automatski prikazuje "Sponsor" gumb
+github: javni-novci
+open_collective: # dodati ako/kada se kreira Open Collective
+custom:
+  - https://safefoundation.org/grants
