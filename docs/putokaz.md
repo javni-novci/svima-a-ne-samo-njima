@@ -8,20 +8,72 @@
 ## Pregled faza
 
 ```
-Faza 1                    Faza 2                    Faza 3
-DOKAZ KONCEPTA            LOKALNE ZAJEDNICE          NACIONALNA SKALA
-Podcast tržište           Općinski/DAO proračuni     Glasanje i državni proračun
-6-12 mjeseci              12-24 mjeseca              24-48 mjeseci
-~1.000 korisnika          ~10.000 korisnika          ~100.000+ korisnika
+Faza 0                Faza 1a              Faza 1b               Faza 2                Faza 3
+PREDUVJETI            RANI PRISTUP         PRODUKCIJA            ZAJEDNICE             NACIONALNA
+Certilia portal,      User-held salt,      ZK nullifier,         DAO glasanje,         Državni proračun,
+DPIA, pravne konz.    ograničeni korisn.   puni onboarding       općinski proračuni    EUDI integracija
+2-3 mjeseca           3-6 mjeseci          6-12 mjeseci          12-24 mjeseca         24-48 mjeseci
 ```
 
 ---
 
-## Faza 1: Podcast tržište (dokaz koncepta)
+## Faza 0: Preduvjeti (NOVO v0.5)
 
 ### Cilj
 
-Dokazati da **Certilia identitet + lančano upravljanje sredstvima** funkcionira u stvarnom svijetu s pravim korisnicima i pravim eurima.
+Riješiti blokirajuće preduvjete koje su istraživanja identificirala, prije nego napišemo ijednu liniju kôda.
+
+### Koraci
+
+| # | Korak | Izvor | Rok |
+|---|-------|-------|-----|
+| 0.1 | Registrirati se na developer.certilia.com i developer.test.certilia.com | Istraživanje 01 | Odmah |
+| 0.2 | Dohvatiti JWKS, potvrditi algoritam potpisa (RS256 vs ES256) | Q1 |  1-2 dana |
+| 0.3 | Testirati OIDC tok u sandboxu — potvrditi nonce podršku | Q3 | 1-2 dana |
+| 0.4 | Pogledati primjer JWT-a — potvrditi sub claim format | Q2 | 1-2 dana |
+| 0.5 | Pročitati Certilia uvjete korištenja — provjera legalnosti | L1 | 1-2 dana |
+| 0.6 | Provesti DPIA (procjenu utjecaja na zaštitu podataka) | Istraživanje 06 | 2-4 tjedna |
+| 0.7 | Konzultacija s AZOP-om (prethodno savjetovanje) | Istraživanje 06 | 2-4 tjedna |
+| 0.8 | HANFA upit o CASP licenci | L5 | 2-4 tjedna |
+
+### Izlazni kriterij
+
+Sva pitanja Q1-Q4 riješena. DPIA proveden. Pravna osnova potvrđena.
+
+---
+
+## Faza 1a: Rani pristup (user-held salt)
+
+### Cilj
+
+Dokazati da **Certilia identitet + lančano upravljanje sredstvima** funkcionira s ograničenim brojem korisnika, koristeći privremeni pristup privatnosti (user-held salt).
+
+**GDPR napomena:** Ova faza koristi Opciju A2 iz privatnost.md — DPIA mora biti proveden PRIJE lansiranja. Eksplicitno privremena mjera dok nullifier nije spreman.
+
+---
+
+## Faza 1b: Produkcija (ZK nullifier)
+
+### Cilj
+
+Zamijeniti user-held salt s ZK nullifier pristupom za punu GDPR usklađenost. Ovo je preduvjet za šire lansiranje.
+
+### Novi zahtjevi (iznad faze 1a)
+
+| Komponenta | Opis | Razlog |
+|------------|------|--------|
+| ZK krug za JWT verifikaciju | Circom/Halo2/Noir krug koji dokazuje "imam validan Certilia JWT" | Privatnost i GDPR usklađenost |
+| Nullifier sustav | Kontekstni nullifier za Sybil zaštitu | Jedinstvenost bez identificiranja |
+| Groth16/PLONK verifikator na lancu | ~200-300K gas za verifikaciju ZK dokaza | Zamjenjuje direktnu RSA verifikaciju |
+| Migracija faza 1a → 1b | Stari SBT-ovi (hash-bazirani) zamijenjeni nullifier SBT-ovima | Sve postojeće korisnike migrirati |
+
+---
+
+## Faza 2: Lokalne zajednice i DAO proračuni (RANIJE: "Faza 2")
+
+### Cilj
+
+Proširiti sustav izvan podcast tržišta na **upravljanje zajedničkim proračunima**.
 
 ### Opseg
 

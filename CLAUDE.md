@@ -44,19 +44,31 @@ Svaka prihvaćena odluka mora biti zapisana kao ADR sa sljedećom strogom strukt
 
 ## KONTEKST I OGRANIČENJA PROJEKTA
 
-- **Identitet:** Certilia Mobile.id (OIDC tok, vraća RSA/P-256 JWT-ove).
-- **Blockchain:** Gnosis lanac (obvezan zbog učinkovitosti goriva za lančanu kriptografiju).
-- **Valuta:** Monerium EURe (MiCA usklađen).
+### Istraživanjima validirane činjenice (7 tema, 14 izvještaja, prosječna podudarnost 85/100)
+
+- **Identitet:** Certilia Mobile.id — WSO2 Identity Server, vjerojatno RS256/RSA-2048 (treba potvrditi na developer portalu). OIB eksplicitno u JWT-u. Sandbox: developer.test.certilia.com. Besplatno do 100K prijava/mj.
+- **Blockchain:** Gnosis lanac. RSA-2048 verifikacija ~1,5M gas (~$0,002). P-256 ~70-330K gas. ZK Groth16 ~200-300K gas. Sve <$0,01.
+- **Valuta:** Monerium EURe V2 (`0x420CA0f9B9b604cE0fd9C18EF134C705e5Fa3430`). Blacklist potvrđen (LCX presedan). Pausable. SEPA rampa bez naknada.
+- **Razdjelnik:** 0xSplits V2 PushSplit na Gnosisu. Revidiran (Zach Obront). EURe kompatibilan. Warehouse fallback za blacklist.
+- **Gasless:** EIP-2771/OpenGSN za fazu 1, ERC-4337 za fazu 2. 4+ bundlera, 6+ paymastera na Gnosisu. ~$30-64 za 10K korisnika.
 - **Trezor:** Safe (bivši Gnosis Safe) sa Zodiac modulima ili stražarima.
-- **Temeljno pravilo:** "Nikada ne vjeruj klijentu". Poslužitelj djeluje kao poštar za izravnu verifikaciju Certilia identiteta, prosljeđujući JWT klijentu. Klijent sam kuje SBT kako bi sustav ostao bez povjerenja. Poslužitelj NE drži Web3 privatne ključeve.
+
+### GDPR ograničenje (KRITIČNO)
+
+**Hash OIB-a na javnom blockchainu = osobni podatak.** EDPB 02/2025 jednoglasno. ZK nullifier pristup OBAVEZAN za produkciju. DPIA obavezan prije lansiranja. Legitimni interes kao pravna osnova (ne privola).
+
+### Temeljno pravilo
+
+"Nikada ne vjeruj klijentu". Poslužitelj djeluje kao poštar za izravnu verifikaciju Certilia identiteta, prosljeđujući JWT klijentu. Klijent sam kuje SBT kako bi sustav ostao bez povjerenja. Poslužitelj NE drži Web3 privatne ključeve.
 
 ## KLJUČNI DOKUMENTI
 
-- `README.md` — Tehnički pregled v0.4, vizija i pregled arhitekture.
+- `README.md` — Tehnički pregled v0.5, vizija i pregled arhitekture.
 - `docs/architecture.md` — ADR-ovi (trezor, identitet, mreža), specifikacije pametnih ugovora, otvorena pitanja.
 - `docs/privatnost.md` — ADR-004: calldata curenje, nullifier pristup, ZK opcije, GDPR implikacije.
-- `docs/model-prijetnji.md` — 15 napada (T1-T15), stabla napada, matrica rizika, prioritetni popis ublažavanja.
+- `docs/model-prijetnji.md` — 18 napada (T1-T18), stabla napada, matrica rizika, prioritetni popis ublažavanja.
 - `docs/ekonomski-model.md` — Tok sredstava, održivost platitelja goriva, poslovni model, izlazni scenariji.
 - `docs/analiza-postojecih.md` — Usporedba s World ID, Polygon ID, Gitcoin Passport, Estonija e-Residency.
 - `docs/putokaz.md` — Tri faze skaliranja s tehničkim zahtjevima i metrikama uspjeha.
-- `docs/pravna-analiza.md` — eIDAS, GDPR, MiCA, elektroničko glasanje, EUDI novčanik.
+- `docs/pravna-analiza.md` — eIDAS, GDPR (EDPB 02/2025), MiCA, Worldcoin presedan, EUDI novčanik.
+- `research/README.md` — Indeks 7 istraživanja s križnim provjerama (14 izvještaja, prosječna podudarnost 85/100).

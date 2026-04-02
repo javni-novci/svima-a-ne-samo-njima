@@ -1,7 +1,7 @@
 # Zapis arhitektonskih odluka
 
 **Projekt:** javni-novci / svima-a-ne-samo-njima
-**Verzija:** v0.4-nacrt
+**Verzija:** v0.5-nacrt
 **Status:** Iteracija — poziv na tehničku recenziju
 
 ---
@@ -245,7 +245,7 @@ Lančana JWT verifikacija zahtijeva RSA ili P-256 kriptografiju unutar EVM-a. Ov
 
 | Kriterij | Ethereum glavna mreža | Gnosis lanac |
 |----------|----------------------|--------------|
-| Cijena goriva (RSA-2048 verif., ~2M goriva) | ~$50-200 USD | ~$0,01-0,05 USD |
+| Cijena goriva (RSA-2048 verif., ~1,5M goriva) | ~$30-150 USD | ~$0,002-0,005 USD |
 | Izvorna Safe podrška | Da | Da (domovina Safe-a) |
 | EURe dostupnost | Da | Da (Monerium izvorno podržava) |
 | Konačnost | ~12 min | ~5 s |
@@ -284,33 +284,85 @@ Korisnik                  Skupljač (Gelato/Biconomy)       Gnosis lanac
 
 ---
 
-## 5. ADR-004: Privatnost lančanih podataka
+## 5. ADR-004: Privatnost lančanih podataka (AŽURIRANO v0.5)
 
 Potpuna analiza izdvojena u: **[privatnost.md](privatnost.md)**
 
-Sažetak odluke: **Opcija C (hibridni pristup)**
-- Faza 1: Selektivno prosljeđivanje (Opcija A) — na lanac idu samo potpis + sažetak + nonce + hash(sub). Osobni podaci NE idu u calldata.
-- Faza 2+: Nullifier pristup (Opcija B) — potpuna privatnost putem ZK dokaza.
+**Sažetak odluke (PROMIJENJENO nakon istraživanja 06 — GDPR):**
 
-**Kritično za arhitekturu:** Ova odluka zahtijeva da CertiliaSBT ugovor bude dizajniran s **zamjenjivom verifikacijskom logikom** od prvog dana. Vidi odjeljak 7.1.
+**Opcija B (nullifier pristup) je OBAVEZNA za produkciju.** GDPR ne dopušta kompromis — EDPB 02/2025 eksplicitno navodi da hash na blockchainu jest osobni podatak.
+
+- **Faza 1a (rani pristup):** Opcija A2 (user-held salt) kao privremena mjera s DPIA-jem i AZOP savjetovanjem.
+- **Faza 1b (produkcija):** Opcija B (nullifier) mora biti spremna prije šireg lansiranja.
+- **Migracija:** Korisnici iz 1a kuju nove SBT-ove pod nullifier sustavom.
+
+**Kritično za arhitekturu:** `IIdentityVerifier` apstrakcijski sloj omogućuje migraciju A2→B bez zamjene SBT ugovora. Vidi odjeljak 7.1.
 
 ---
 
-## 6. Model prijetnji
+## 6. ADR-005: Strategija za gasless transakcije (NOVO v0.5)
+
+### Kontekst
+
+Novi korisnici nemaju xDAI za gorivo. Trebamo sponzorirati `claimCertiliaSBT()` (~200K-1,5M gas ovisno o verifikacijskom pristupu). Istraživanje 03 (88/100 podudarnost) potvrđuje zrelu infrastrukturu na Gnosisu, ali otvara pitanje: treba li nam puni ERC-4337 ili je jednostavniji pristup bolji?
+
+### Kvantitativna matrica
+
+| Metrika (težina) | A: ERC-4337 (Pimlico/Biconomy) | B: EIP-2771 / OpenGSN | C: Vlastiti relayer | D: Gelato Relay |
+|-------------------|-------------------------------|----------------------|--------------------|-----------------| 
+| Sigurnost i odsutnost povjerenja (40%) | 80 — standardizirano, EntryPoint revidiran, paymaster transparentan | 70 — Forwarder revidiran (OZ), ali relayer je centraliziran | 50 — custom kôd, nema revizije, relayer je SPOF | 65 — Gelato infrastruktura, ali vendor lock-in |
+| Korisničko iskustvo (20%) | 50 — zahtijeva Smart Account (Safe/Kernel), složeniji onboarding | 80 — korisnik ostaje EOA, standardni MetaMask | 85 — korisnik ostaje EOA, potpuno prilagođeno | 75 — korisnik ostaje EOA kroz Safe Relay Kit |
+| Gorivo i mrežna učinkovitost (20%) | 60 — UserOp overhead ~50-150K gas iznad same transakcije | 75 — manji overhead od ERC-4337 | 85 — minimalan overhead, obična transakcija | 70 — Gelato overhead + 20% gas premium na besplatnom planu |
+| Skalabilnost i nadogradivost (20%) | 90 — standardizirano, ekosustav alata, Safe Gas Station krediti ($50K) | 70 — OpenGSN na Gnosisu, ali manji ekosustav | 40 — ne skalira, zahtijeva vlastitu infrastrukturu | 65 — ovisnost o Gelato, ali radi sa Safe |
+
+| Opcija | Ponderirani prosjek |
+|--------|---------------------|
+| A: ERC-4337 | **71** |
+| B: EIP-2771 / OpenGSN | **73** |
+| C: Vlastiti relayer | **62** |
+| D: Gelato Relay | **68** |
+
+### Odluka
+
+**Opcija B (EIP-2771 / OpenGSN) za fazu 1** — najjednostavnije za naš use case (jedna gasless funkcija, korisnik ostaje EOA). 
+
+**Opcija A (ERC-4337) za fazu 2** — kada DAO upravljanje zahtijeva Smart Account infrastrukturu.
+
+### Sigurnosne implikacije
+
+- Relayer je centralizirana komponenta — ali može samo proslijediti ili odbiti transakciju, ne može ukrasti sredstva niti lažirati identitet.
+- `claimCertiliaSBT()` u ugovoru sam ograničava na 1 mint po identitetu — relayer ne može zaobići ovo.
+- OpenGSN na Gnosisu ima deployane RelayHub, Forwarder i Paymaster adrese (iz istraživanja 03).
+
+### Neriješeno
+
+- Trebamo li self-hostati OpenGSN relayer ili koristiti javne relayere?
+- Koliko xDAI deponirati u OpenGSN Paymaster za fazu 1?
+
+### Troškovi (iz istraživanja 03)
+
+| Scenarij | Gas po korisniku | Trošak po korisniku (2 gwei) | 1.000 korisnika | 10.000 korisnika |
+|----------|-----------------|------------------------------|-----------------|-------------------|
+| Nullifier ZK verifikacija (~300K gas) | ~350K (s overhead) | ~0,0007 xDAI | 0,7 xDAI (~$0,70) | 7 xDAI (~$7) |
+| RSA-2048 verifikacija (~1,5M gas) | ~1,6M (s overhead) | ~0,0032 xDAI | 3,2 xDAI (~$3,20) | 32 xDAI (~$32) |
+
+---
+
+## 7. Model prijetnji
 
 Potpuna analiza izdvojena u: **[model-prijetnji.md](model-prijetnji.md)**
 
 Sadrži:
-- 15 identificiranih napada (T1-T15) klasificiranih po ozbiljnosti
+- 18 identificiranih napada (T1-T18) klasificiranih po ozbiljnosti (v0.5: T16 GDPR, T17 Pausable, T18 recover)
 - Stabla napada za kritične scenarije (krađa identiteta, krađa sredstava)
 - Matricu rizika (vjerojatnost × utjecaj)
 - Prioritetni popis ublažavanja
 
 ---
 
-## 7. Arhitektura pametnih ugovora
+## 8. Arhitektura pametnih ugovora
 
-### 7.1. CertiliaSBT.sol — Specifikacija
+### 8.1. CertiliaSBT.sol — Specifikacija
 
 ```
 CertiliaSBT (ERC-721 + ERC-5192 neprenosivo sučelje)
@@ -362,7 +414,7 @@ CertiliaSBT (ERC-721 + ERC-5192 neprenosivo sučelje)
 
 4. **ERC-5192:** Umjesto prilagođenog `transferFrom() → revert`, koristimo standardizirano ERC-5192 sučelje. Kompatibilno s alatima koji prepoznaju neprenosive tokene (OpenSea, tržišta, indexeri).
 
-### 7.2. Safe integracija
+### 8.2. Safe integracija
 
 ```
 Safe trezor (Platforma)
@@ -379,10 +431,12 @@ Safe trezor (Platforma)
 
 **Pojašnjenje:** Za fazu 1 (dokaz koncepta), Safe funkcionira kao obični višepotpisni novčanik (2/3) za operativne troškove platforme. Zodiac moduli su odgođeni za fazu 2 kada DAO upravljanje postaje relevantno.
 
-### 7.3. Razdjelnik plaćanja
+### 8.3. Razdjelnik plaćanja (Q6 ZATVOREN — 0xSplits V2 PushSplit)
+
+**Odluka iz istraživanja 04 (91/100 podudarnost):** 0xSplits V2 PushSplit na Gnosisu. Revidiran (Zach Obront), EURe kompatibilan, SDK zreo (`@0xsplits/splits-sdk`), bez protokolnih naknada. Blacklist fallback u Warehouse rješava T13.
 
 ```
-RazdjelnikPlacanja (po kreatoru ili 0xSplits v2)
+0xSplits V2 PushSplit (po kreatoru)
 |
 |-- Konfiguracija
 |   |-- primatelji: [adresaKreatora, platformskiSafe]
@@ -400,47 +454,53 @@ RazdjelnikPlacanja (po kreatoru ili 0xSplits v2)
 
 ---
 
-## 8. Centralni registar otvorenih pitanja
+## 9. Centralni registar otvorenih pitanja (v0.5)
 
-Sva otvorena pitanja iz svih dokumenata, mapirana na faze i ovisnosti.
+Ažurirano na temelju 7 istraživanja. Riješena pitanja označena.
 
-### Kritična (blokiraju fazu 1)
+### Riješena (istraživanjima potvrđeno)
+
+| # | Pitanje | Odgovor | Izvor |
+|---|---------|---------|-------|
+| Q4 | Postoji li Certilia testno okruženje? | **DA — developer.test.certilia.com** | Istraživanje 01 (82/100) |
+| Q6 | 0xSplits v2 ili vlastiti razdjelnik? | **0xSplits V2 PushSplit** — revidiran, EURe kompatibilan, SDK zreo | Istraživanje 04 (91/100) |
+| Q8 | ERC-4337 nasuprot alternativama za gasless? | **EIP-2771/OpenGSN za fazu 1, ERC-4337 za fazu 2** (ADR-005) | Istraživanje 03 (88/100) |
+| P4 | Je li hash(`sub`) osobni podatak po GDPR-u? | **DA — jednoglasno.** EDPB 02/2025, Breyer, WP216. DPIA obvezan. | Istraživanje 06 (93/100) |
+
+### Djelomično riješena (zahtijevaju potvrdu na developer portalu)
+
+| # | Pitanje | Trenutni odgovor | Potrebna akcija |
+|---|---------|------------------|-----------------|
+| Q1 | Koji algoritam koristi Certilia za JWT potpis? | **Vjerojatno RS256/RSA-2048** (WSO2 IS default) | Registrirati se na developer.certilia.com, dohvatiti JWKS |
+| Q2 | Što je `sub` tvrdnja u Certilia JWT-u? | **Vjerojatno OIB ili interni ID** — Certilia eksplicitno vraća OIB | Pogledati primjer JWT-a iz sandboxa |
+| Q3 | Podržava li Certilia prilagođeni `nonce`? | **Vjerojatno DA** (WSO2 IS podržava nonce) | Testirati OIDC tok u sandboxu |
+| Q5 | Najjeftiniji način za lančanu kriptografsku verifikaciju? | **OpenZeppelin RSA v5.1+** (~1,5M gas) ili **P-256** (~70-330K gas) ako Certilia podržava ES256 | Ovisi o Q1 |
+
+### Blokiraju fazu 1b (nullifier produkcija)
 
 | # | Pitanje | Izvor | Ovisnosti |
 |---|---------|-------|-----------|
-| Q1 | Koji algoritam koristi Certilia za JWT potpis? | architecture.md | Određuje verifikacijsku biblioteku |
-| Q2 | Što je `sub` tvrdnja u Certilia JWT-u? Je li deterministički jedinstvena po građaninu? | architecture.md | Sybil zaštita, privatnost.md hash problem |
-| Q3 | Podržava li Certilia prilagođeni `nonce` parametar? | architecture.md | Cijeli OIDC tok |
-| Q4 | Postoji li Certilia testno okruženje? | architecture.md | Razvoj bez pravih identiteta |
-| P4 | Je li hash(`sub`) "osobni podatak" po GDPR-u? Trebamo li DPIA? | privatnost.md, pravna-analiza.md | Faza 1 regulatorni rizik |
-| L1 | Zabranjuju li Certilia uvjeti korištenja prosljeđivanje JWT-a pametnim ugovorima? | pravna-analiza.md | Legalnost cijelog projekta |
+| P1 | Koji ZK sustav? Groth16, PLONK, Halo2? | privatnost.md | Groth16 ~200K gas, Halo2 ~500K gas. Izbor utječe na UX (proving time). |
+| P2 | Može li se RSA-2048 staviti u ZK krug? | privatnost.md | Da — zkEmail i Anastasia to rade. Ali deseci milijuna constraintova. |
+| P3 | Kako riješiti opozivost u nullifier modelu? | privatnost.md | Uklanjanje iz Merkle stabla? Tko ima tu ovlast? |
+| P5 | Je li nullifier osobni podatak po GDPR-u? | privatnost.md | Formalno nepotvrđeno. Potencijalno izvan GDPR dosega. |
 
-### Važna (utječu na dizajn faze 1)
+### Otvorena (utječu na dizajn)
 
 | # | Pitanje | Izvor | Ovisnosti |
 |---|---------|-------|-----------|
-| Q5 | Najjeftiniji način za lančanu RSA verifikaciju na Gnosisu? | architecture.md | Ovisi o Q1 |
-| Q6 | 0xSplits v2 ili vlastiti razdjelnik? | architecture.md | Zahtijeva ADR |
-| Q8 | ERC-4337 nasuprot Gelato posredniku? | architecture.md | Zahtijeva ADR |
 | Q9 | Korak 7: Polling ili WebSocket za JWT dohvat? | architecture.md | UX |
+| L1 | Zabranjuju li Certilia uvjeti prosljeđivanje JWT-a ugovorima? | pravna-analiza.md | Legalnost projekta |
 | L5 | Trebamo li CASP licencu? | pravna-analiza.md | HANFA upit |
-| E1 | Fiksni (90/10) ili DAO-upravljani postotak raspodjele? | ekonomski-model.md | Za fazu 1: fiksni. DAO tek u fazi 2. |
-
-### Blokiraju fazu 2
-
-| # | Pitanje | Izvor | Ovisnosti |
-|---|---------|-------|-----------|
-| P1 | Koji ZK sustav? Groth16, PLONK, Halo2? | privatnost.md | Nullifier implementacija |
-| P2 | Može li se RSA/P-256 učinkovito implementirati u ZK krugu? | privatnost.md | Ovisi o Q1 |
-| P3 | Kako riješiti opozivost u nullifier modelu? | privatnost.md | ZK oporavak novčanika |
+| E1 | Fiksni (90/10) ili DAO-upravljani postotak? | ekonomski-model.md | Za fazu 1: fiksni |
 
 ### Istraživačka (faza 3+)
 
 | # | Pitanje | Izvor |
 |---|---------|-------|
-| Q10 | Višedržavna eIDAS podrška | architecture.md |
+| Q10 | Višedržavna eIDAS podrška — EUDI koristi P-256 i SD-JWT-VC (ne klasični JWT) | architecture.md, istraživanje 05 |
 | Q11 | SBT s istekom nasuprot trajnosti | architecture.md |
-| L4 | eIDAS 2.0 / EUDI utjecaj na arhitekturu | pravna-analiza.md |
+| L4 | eIDAS 2.0 / EUDI — rok kraj 2026., Certilia koegzistira 3-5 god. | pravna-analiza.md, istraživanje 05 |
 
 ---
 

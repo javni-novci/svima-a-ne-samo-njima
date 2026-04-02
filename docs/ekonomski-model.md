@@ -52,7 +52,8 @@ Platitelj goriva sponzorira prvu transakciju (kovanje SBT-a) za svakog novog kor
 
 | Parametar | Vrijednost |
 |-----------|-----------|
-| Trošak kovanja SBT-a na Gnosisu (procjena) | ~0,01-0,05 USD |
+| Trošak kovanja SBT-a na Gnosisu — RSA verif. (istraživanje 02) | ~0,002-0,005 USD (~1,5M gas) |
+| Trošak kovanja SBT-a na Gnosisu — ZK nullifier (istraživanje 02) | ~0,0003-0,001 USD (~200-300K gas) |
 | Očekivani broj korisnika (godina 1) | 1.000-10.000 |
 | Ukupni godišnji trošak platitelja | 10-500 USD |
 | Izvor financiranja | 30% od platformske provizije |
@@ -108,7 +109,15 @@ Platitelj goriva sponzorira prvu transakciju (kovanje SBT-a) za svakog novog kor
 | Platitelj goriva | Sponzorirano kovanje SBT-a | 10-500 USD |
 | Node.js poslužitelj | OIDC poštar (minimalan) | 50-200 USD/mj. |
 | Revizija pametnih ugovora | Profesionalna sigurnosna revizija | 10.000-50.000 USD (jednokratno) |
+| DPIA (procjena utjecaja na zaštitu podataka) | Obvezno prema EDPB 02/2025 (istraživanje 06) | 1.000-5.000 EUR |
+| Pravne konzultacije (GDPR, MiCA) | AZOP savjetovanje, HANFA upit o CASP licenci | 1.000-3.000 EUR |
 | Razvoj | Timski troškovi | Ovisno o modelu (volonteri vs. plaćeni) |
+
+### Potencijalni besplatni resursi (iz istraživanja 03)
+
+- **Safe{Core} Gas Station:** Do $50.000 besplatnih gas kredita na Gnosisu za projekte koji koriste Safe + ERC-4337 + Pimlico.
+- **Pimlico besplatni plan:** 1M credits/mj (~1.300 UserOps). Dovoljno za rani pristup.
+- **Monerium SEPA rampa:** Bez naknada za SEPA ↔ EURe konverziju (trenutno).
 
 ### Kritična točka
 
@@ -116,6 +125,7 @@ Platitelj goriva sponzorira prvu transakciju (kovanje SBT-a) za svakog novog kor
 - Tražiti financiranje od EU fondova (digitalna transformacija / e-uprava).
 - Pokrenuti javno crowdfunding kampanju (koristiti vlastitu infrastrukturu kao dokaz koncepta).
 - Početi s ograničenim proračunom u Safe-u i ručnom revizijom zajednice, pa profesionalna revizija za fazu 2.
+- **Prijaviti se za Safe{Core} Gas Station** za gas kredite na Gnosisu.
 
 ---
 

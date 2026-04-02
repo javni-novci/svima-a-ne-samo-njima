@@ -145,14 +145,33 @@ k +------+--------+--------+--------+--->
 
 ---
 
-## 5. Prioritetni popis ublažavanja
+## 5. Novi napadi iz istraživanja (v0.5)
+
+### Kritična ozbiljnost
+
+| # | Napad | Vektor | Ublažavanje | Rezidualni rizik |
+|---|-------|--------|-------------|------------------|
+| T16 | GDPR regulatorna kazna (NOVO) | Hash OIB-a na javnom lancu = osobni podatak. EDPB 02/2025 eksplicitno. Kazna do 20M EUR ili 4% prometa. | Nullifier pristup (privatnost.md Opcija B). DPIA prije produkcije. Konzultacija s AZOP-om. Legitimni interes kao pravna osnova. | Visok dok se ne implementira nullifier. Nizak s nullifierom (ali formalno nepotvrđeno od regulatora). |
+
+### Visoka ozbiljnost
+
+| # | Napad | Vektor | Ublažavanje | Rezidualni rizik |
+|---|-------|--------|-------------|------------------|
+| T17 | Monerium globalni Pause (NOVO) | Owner (Gnosis Safe multisig Moneriuma) može pozvati `pause()` i zaustaviti SVE EURe transfere na lancu. Efektivno gasi cijelu platformu. | Nema tehničkog ublažavanja — ovo je regulatorna ovlast. Diverzifikacija: podržati DAI/xDAI kao rezervnu valutu za kritične isplate. Alert na Pause event. | Srednji. Pause se koristi samo u ekstremnim situacijama (sigurnosna prijetnja). Ali ne možemo ga spriječiti. |
+| T18 | Monerium recover() intervencija (NOVO) | Monerium može pozvati `recover(from, to)` i premjestiti EURe s jedne adrese na drugu, uz potpis koji je korisnik dao pri onboardingu. | Korisnici moraju biti eksplicitno informirani o recover() funkciji u ToS-u. Razdjelnik ne drži sredstva (PushSplit distribuira odmah). | Nizak za platformu (sredstva ne leže u razdjelniku). Srednji za pojedinačne korisnike koji drže EURe dulje vrijeme. |
+
+---
+
+## 6. Prioritetni popis ublažavanja (v0.5)
 
 | Prioritet | Ublažavanje | Napadi koje pokriva | Složenost |
 |-----------|-------------|--------------------|-----------| 
-| 1 | Riješiti calldata curenje (privatnost.md) | T11 | Srednja |
-| 2 | Profesionalna revizija pametnih ugovora | T1, T5 (djelomično) | Visoka (trošak) |
-| 3 | Klijentska provjera nonce-a (korak 4) | T2, T9 (djelomično) | Niska |
-| 4 | Vremensko zaključavanje na Safe operacije | T12, T14 | Niska |
-| 5 | Nadzor Certilia JWKS krajnje točke | T5 | Niska |
-| 6 | Diverzifikacija stabilnih tokena | T13 | Srednja |
-| 7 | Nullifier pristup za glasanje | T11 (potpuno) | Visoka |
+| 1 | **Nullifier pristup za privatnost (GDPR)** | T11, T16 | Visoka — ali OBAVEZNO za produkciju |
+| 2 | **DPIA prije produkcije** | T16 | Srednja (1-5K EUR) |
+| 3 | Profesionalna revizija pametnih ugovora | T1, T5 (djelomično) | Visoka (trošak) |
+| 4 | Klijentska provjera nonce-a (korak 4) | T2, T9 (djelomično) | Niska |
+| 5 | Vremensko zaključavanje na Safe operacije | T12, T14 | Niska |
+| 6 | Nadzor Certilia JWKS krajnje točke | T5 | Niska |
+| 7 | Diverzifikacija stabilnih tokena (DAI/xDAI fallback) | T13, T17 | Srednja |
+| 8 | Alert sustav za Monerium Pause/Blacklist evente | T13, T17 | Niska |
+| 9 | Informiranje korisnika o recover() u ToS-u | T18 | Niska |

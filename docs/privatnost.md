@@ -1,46 +1,43 @@
 # ADR-004: Privatnost lančanih podataka
 
-**Status:** Otvoreno — zahtijeva odluku prije implementacije
-**Prioritet:** Kritičan — blokira viziju nacionalnog glasanja
+**Status:** ODLUČENO — nullifier pristup (Opcija B) obvezan od faze 1
+**Prioritet:** Kritičan — GDPR zahtijeva, blokira produkciju
+**Ažurirano:** v0.5 — na temelju istraživanja 06 (GDPR, 93/100 podudarnost)
 
 ---
 
 ## Kontekst
 
-Tvrdimo da "nema osobnih podataka na lancu", ali trenutna arhitektura ima dva ozbiljna propusta privatnosti koja moramo riješiti prije nego napišemo ijednu liniju kôda.
+Istraživanje 06 (GDPR i hashirani identifikatori) jednoglasno potvrđuje:
+
+> **`keccak256(OIB)` pohranjen na javnom blockchainu JEST osobni podatak prema GDPR-u.**
+
+Ovo nije mišljenje — ovo je pravni zaključak potkrijepljen:
+- **EDPB Smjernice 02/2025** o blockchainu: "hash će se također smatrati osobnim podatkom"
+- **CJEU Breyer (C-582/14):** relativni test identifikabilnosti
+- **WP29 WP216:** hashing nije anonimizacija
+- **EDPB Smjernice 01/2025:** pseudonimizirani podaci = osobni podaci
+- **CNIL blockchain smjernice (2018):** nesoljeni hash nedostatan
+
+OIB ima prostor od ~10^11 vrijednosti — brute-force izračun svih hasheva traje **minutu do sati** na modernom hardveru. Rainbow table napad je trivijalan.
 
 ### Problem 1: Calldata curenje
 
-Kada korisnik pozove `claimCertiliaSBT(bytes jwt)`, **cijeli JWT završava u calldata transakcije** — trajno vidljiv na javnom lancu. Čak i ako pametni ugovor ne sprema JWT u svoju pohranu, calldata je dostupan zauvijek putem bilo kojeg istraživača blokova.
-
-Tipični Certilia JWT može sadržavati:
-
-```
-{
-  "sub": "HR-123456789",        // jedinstveni identifikator (moguće OIB)
-  "name": "Ivan Horvat",        // ime i prezime
-  "email": "ivan@example.com",  // elektronička pošta
-  "nonce": "0xABC...",          // adresa novčanika
-  "iss": "https://certilia.hr", // izdavač
-  "exp": 1720000000             // istek
-}
-```
-
-**Posljedica:** Bilo tko može pročitati transakciju i doznati ime, prezime i identifikator osobe koja stoji iza određene Ethereum adrese. Ovo je **potpuna deanonimizacija** i kršenje GDPR-a.
+Certilia JWT (potvrđeno iz istraživanja 01) sadrži **OIB eksplicitno**. Ako cijeli JWT završi u calldata, to je potpuna deanonimizacija.
 
 ### Problem 2: Pseudonimni identifikator u pohrani
 
-Čak i ako riješimo calldata problem, `identityClaimed[hash(jwt.sub)]` je pseudonimni identifikator trajno zapisan u pohrani ugovora. Ako itko ikada poveže taj hash s OIB-om (npr. curenje baze podataka, korelacijska analiza), svi SBT-ovi postaju deanonimizirani.
+`identityClaimed[hash(sub)]` je pseudonimni identifikator trajno zapisan na javnom, nepromjenjivom lancu. EDPB 02/2025 eksplicitno navodi da ovo predstavlja osobni podatak. Članak 17. GDPR-a (pravo na brisanje) je u **direktnom sukobu** s nepromjenjivošću blockchaina.
 
-Za nacionalno glasanje ovo znači: **glasovi postaju javni.**
+**EDPB 02/2025:** "Tehnička nemogućnost ne može se pozivati kao opravdanje za neusklađenost sa zahtjevima GDPR-a."
 
 ---
 
 ## Razmatrane opcije
 
-### Opcija A: Selektivno prosljeđivanje (minimalni JWT)
+### Opcija A: Selektivno prosljeđivanje (minimalni JWT) — GDPR NEUSKLAĐENA
 
-Umjesto slanja cijelog JWT-a, klijent šalje samo neophodne dijelove: potpis, sažetak sadržaja, nonce i `sub` tvrdnju.
+Na lanac ide samo potpis + sažetak + nonce + hash(sub). Osobni podaci ne idu u calldata.
 
 ```
 Na lanac ide:
@@ -50,36 +47,65 @@ Na lanac ide:
   - hash(sub) za Sybil zaštitu (32 bajta)
 
 Na lanac NE ide:
-  - ime, prezime, e-pošta, ostale tvrdnje
+  - ime, prezime, OIB, e-pošta, ostale tvrdnje
 ```
-
-**Preduvjet:** Pametni ugovor mora moći verificirati RSA potpis nad sažetkom, a ne nad cijelim JWT-om. Ovo zahtijeva da Certilia koristi standardni JWT format gdje je potpis nad base64(header).base64(payload).
 
 | Metrika | Ocjena (0-100) | Obrazloženje |
 |---------|----------------|--------------|
-| Sigurnost i odsutnost povjerenja (40%) | 60 | Rješava calldata, ali hash(sub) ostaje pseudonimni identifikator. Korelacijski napad i dalje moguć. |
-| Korisničko iskustvo (20%) | 85 | Transparentno za korisnika — klijent automatski filtrira. |
+| Sigurnost i odsutnost povjerenja (40%) | 60 | Rješava calldata, ali hash(sub) ostaje pseudonimni identifikator. Brute-force trivijalan. |
+| Korisničko iskustvo (20%) | 85 | Transparentno za korisnika. |
 | Gorivo i mrežna učinkovitost (20%) | 80 | Manje podataka na lancu = manje goriva. |
-| Skalabilnost i nadogradivost (20%) | 50 | Ne rješava temeljni problem za glasanje. Potrebna migracija na ZK za fazu 3. |
+| Skalabilnost i nadogradivost (20%) | 30 | **GDPR neusklađena.** Hash(sub) je osobni podatak. Pravo na brisanje neostvarivo. |
 
-**Ponderirani prosjek: 66**
+**Ponderirani prosjek: 59** (sniženo zbog GDPR nalaza)
 
-### Opcija B: Nullifier pristup (à la Semaphore / World ID)
+**GDPR status:** NEUSKLAĐENA za produkciju. EDPB 02/2025 eksplicitno: nesoljeni hash na javnom blockchainu nije dostatan.
 
-Korisnik off-chain generira kriptografski "nullifier" — jedinstven, nepovratan identifikator koji dokazuje jedinstvenost bez otkrivanja identiteta.
+### Opcija A2: Selektivno prosljeđivanje s user-held salt — MINIMALNO PRIHVATLJIVA
+
+Varijanta Opcije A gdje korisnik drži tajnu sol. Na lancu: `hash(user_salt + sub)`. Sol poznaje SAMO korisnik.
+
+```
+Na lanac ide:
+  - RSA potpis (256 bajtova)
+  - SHA-256 sažetak JWT sadržaja (32 bajta)
+  - nonce / adresa novčanika (20 bajtova)
+  - hash(user_salt + sub) za Sybil zaštitu (32 bajta)
+
+Korisnik čuva lokalno:
+  - user_salt (32 bajta) — u novčaniku ili lokalnoj pohrani
+
+Poslužitelj NIKADA ne vidi:
+  - user_salt
+```
+
+| Metrika | Ocjena (0-100) | Obrazloženje |
+|---------|----------------|--------------|
+| Sigurnost i odsutnost povjerenja (40%) | 70 | Brute-force otežan tajnom soli. Korisnik može "obrisati" identitet uništavanjem soli. Ali: ako korisnik izgubi sol, ne može dokazati identitet za novi SBT. |
+| Korisničko iskustvo (20%) | 70 | Korisnik mora čuvati sol. Gubitak soli = gubitak identiteta. |
+| Gorivo i mrežna učinkovitost (20%) | 80 | Isto kao Opcija A. |
+| Skalabilnost i nadogradivost (20%) | 50 | CNIL smatra da keyed hash "približava učincima brisanja" ali ne potvrđuje potpunu usklađenost. Pravna siva zona. |
+
+**Ponderirani prosjek: 67**
+
+**GDPR status:** SIVA ZONA. CNIL prihvaća kao "bliže brisanju" ali nijedno tijelo nije formalno potvrdilo punu usklađenost. Zahtijeva DPIA i preporučeno prethodno savjetovanje s AZOP-om.
+
+### Opcija B: Nullifier pristup (à la Semaphore / World ID) — PREPORUČENA
+
+Korisnik off-chain generira kriptografski nullifier. Na lancu nema nikakvih osobnih podataka.
 
 ```
 Tok:
-1. Korisnik dobije JWT od Certilije
+1. Korisnik dobije JWT od Certilije (off-chain, kroz OIDC tok)
 2. Klijent lokalno računa:
-   - identityCommitment = hash(privatniKljuc, hash(jwt.sub))
-   - nullifier = hash(identityCommitment, kontekst)
+   - identityCommitment = Poseidon(privatniSkalar, hash(jwt.sub))
+   - nullifier = Poseidon(identityCommitment, kontekst)
 3. Klijent generira ZK dokaz koji dokazuje:
    "Imam validan JWT potpisan od AKD-a
     čiji sub hashira u moj identityCommitment,
     a moj nullifier je jedinstven za ovaj kontekst"
 4. Na lanac ide SAMO:
-   - ZK dokaz (konstantne veličine)
+   - ZK dokaz (konstantne veličine, ~200-300K gas za Groth16 verifikaciju)
    - nullifier (32 bajta)
    - adresa novčanika (20 bajtova)
 ```
@@ -88,54 +114,60 @@ Tok:
 
 | Metrika | Ocjena (0-100) | Obrazloženje |
 |---------|----------------|--------------|
-| Sigurnost i odsutnost povjerenja (40%) | 95 | Potpuna privatnost. Nullifier sprečava Sybil bez otkrivanja identiteta. Jedini rizik je greška u ZK krugu. |
-| Korisničko iskustvo (20%) | 40 | ZK generiranje dokaza traje 10-30s na mobitelu. Korisnik mora čekati. |
-| Gorivo i mrežna učinkovitost (20%) | 70 | ZK verifikacija troši ~300K goriva (Groth16). Jeftinije od RSA, ali zahtijeva postavljeni ceremonijalac. |
-| Skalabilnost i nadogradivost (20%) | 95 | Isti pristup funkcionira za glasanje, proračun i sve buduće primjene. Nullifier kontekst omogućuje različite primjene istog identiteta. |
+| Sigurnost i odsutnost povjerenja (40%) | 95 | Potpuna privatnost. Nullifier ne otkriva identitet. Različit nullifier po kontekstu = nepovezivost. |
+| Korisničko iskustvo (20%) | 40 | ZK generiranje dokaza: ~4s na M1 Pro, ~20s na mobitelu (iz istraživanja 02, Halo2 benchmark). Korisnik mora čekati. |
+| Gorivo i mrežna učinkovitost (20%) | 75 | Groth16 verifikacija ~200-300K gas na Gnosisu = ~$0,0003. Jeftinije od RSA (~1,5M gas). |
+| Skalabilnost i nadogradivost (20%) | 95 | Isti pristup za glasanje, proračun, sve buduće primjene. Kontekstni nullifier omogućuje per-dApp jedinstvenost. |
 
-**Ponderirani prosjek: 79**
+**Ponderirani prosjek: 81**
 
-### Opcija C: Hibridni pristup (A za dokaz koncepta, B za produkciju)
+**GDPR status:** ZNAČAJNO USKLAĐENIJA. AEPD (Španjolska) kvalificira ZK dokaze kao "moćne alate pseudonimizacije" koji implementiraju čl. 25 GDPR-a (privatnost od temelja). Nullifier potencijalno izvan GDPR dosega — ali formalno nepotvrđeno od regulatora.
 
-Faza 1 (dokaz koncepta) koristi selektivno prosljeđivanje (Opcija A) jer je jednostavnije i brže za implementaciju. Faza 2+ migrira na nullifier pristup (Opcija B) za glasanje i osjetljive primjene.
-
-| Metrika | Ocjena (0-100) | Obrazloženje |
-|---------|----------------|--------------|
-| Sigurnost i odsutnost povjerenja (40%) | 70 | Prihvatljivo za tržište (nema glasanja), neprihvatljivo za nacionalnu skalu — ali migracija je planirana. |
-| Korisničko iskustvo (20%) | 85 | Faza 1 je jednostavna. ZK trenje dolazi tek kad je ekosustav zreliji. |
-| Gorivo i mrežna učinkovitost (20%) | 80 | Optimalno za svaku fazu. |
-| Skalabilnost i nadogradivost (20%) | 75 | Zahtijeva migraciju ugovora. Stari SBT-ovi moraju biti zamijenjeni nullifier pristupom. |
-
-**Ponderirani prosjek: 76**
-
-### Opcija D: Potpuno izvanlanačna verifikacija s lančanom atestacijom (ODBAČENO)
-
-Verifikacija se obavlja off-chain (npr. na TEE-u ili putem oracle-a), a na lanac ide samo potpisan rezultat.
+### Opcija D: Potpuno izvanlanačna verifikacija (ODBAČENO)
 
 | Metrika | Ocjena (0-100) | Obrazloženje |
 |---------|----------------|--------------|
-| Sigurnost i odsutnost povjerenja (40%) | 25 | Uvodi povjerenje u off-chain verifikatora. Centralna točka kvara. |
-| Korisničko iskustvo (20%) | 90 | Najjednostavnije za korisnika. |
-| Gorivo i mrežna učinkovitost (20%) | 90 | Minimalan trošak goriva. |
-| Skalabilnost i nadogradivost (20%) | 40 | Off-chain komponenta je usko grlo i SPOF. |
+| Sigurnost i odsutnost povjerenja (40%) | 25 | Centralna točka kvara. |
+| Korisničko iskustvo (20%) | 90 | Najjednostavnije. |
+| Gorivo i mrežna učinkovitost (20%) | 90 | Minimalan gas. |
+| Skalabilnost i nadogradivost (20%) | 40 | SPOF, ne skalira. |
 
 **Ponderirani prosjek: 51**
 
 ---
 
-## Preporuka
+## Odluka (AŽURIRANO v0.5)
 
-**Opcija C (hibridni pristup)** — pragmatičan put koji ne žrtvuje dugoročnu viziju.
+**Opcija B (nullifier pristup) je OBAVEZNA za produkciju.** GDPR ne dopušta kompromis.
 
-Ali ovo zahtijeva da od prvog dana dizajniramo ugovor s **migrabilnošću na umu** — SBT ugovor mora imati verzioniranje i mogućnost zamjene verifikacijske logike.
+### Praktični pristup za fazu 1
+
+Ako ZK nullifier nije spreman za dan 1 lansiranja:
+
+1. **Faza 1a (rani pristup, ograničeni korisnici):** Opcija A2 (user-held salt) s jasnim upozorenjima korisnicima, DPIA-jem i savjetovanjem s AZOP-om. Eksplicitna privremena mjera.
+2. **Faza 1b (produkcija):** Opcija B (nullifier) mora biti spremna prije šireg lansiranja.
+3. **Migracija 1a→1b:** Korisnici iz faze 1a moraju skovati nove SBT-ove pod nullifier sustavom. Stari hash-bazirani zapisi ostaju na lancu ali postaju funkcionalno neaktivni.
+
+### GDPR matrica usklađenosti
+
+| Zahtjev GDPR-a | Opcija A | Opcija A2 (salt) | Opcija B (nullifier) |
+|-----------------|----------|-------------------|----------------------|
+| Čl. 5(1)(c) — minimizacija podataka | Djelomično | Djelomično | Da |
+| Čl. 17 — pravo na brisanje | Ne | Siva zona (uništenje soli) | Da (uklanjanje iz Merkle stabla) |
+| Čl. 25 — privatnost od temelja | Ne | Djelomično | Da |
+| Čl. 35 — DPIA obvezan | Da | Da | Da (ali manji rizik) |
+| Recital 26 — anonimizacija | Ne (hash je pseudonim) | Uvjetno (ovisi o soli) | Potencijalno da |
+| EDPB 02/2025 usklađenost | Ne | Siva zona | Da |
 
 ---
 
-## Neriješena pitanja specifična za privatnost
+## Neriješena pitanja (ažurirano)
 
-| # | Pitanje | Kontekst |
-|---|---------|----------|
-| P1 | Koji ZK sustav koristiti? Groth16, PLONK, Halo2? | Groth16 zahtijeva pouzdanu ceremoniju postavljanja. PLONK ne zahtijeva ali je sporiji. Halo2 nema ceremoniju ali je najnoviji. |
-| P2 | Može li se RSA verifikacija učinkovito implementirati unutar ZK kruga? | RSA je skup za ZK. Ako Certilia koristi P-256, circom-ecdsa biblioteke već postoje. |
-| P3 | Kako riješiti opozivost u nullifier modelu? | Ako korisnik izgubi mobitel, kako opozvati nullifier bez otkrivanja identiteta? |
-| P4 | Je li hash(OIB) "osobni podatak" po GDPR-u? | Sudska praksa EU sugerira da DA — pseudonimizacija nije anonimizacija. Vidi pravna-analiza.md. |
+| # | Pitanje | Status | Kontekst |
+|---|---------|--------|----------|
+| P1 | Koji ZK sustav koristiti? | Otvoreno | Groth16 (ceremonija ali ~200K gas), PLONK (bez ceremonije ali sporiji), Halo2 (~500K gas, ~4-20s proving). Istraživanje 02 daje benchmark. |
+| P2 | Može li se RSA-2048 učinkovito staviti u ZK krug? | Djelomično odgovoreno | Iz istraživanja 02: zkEmail i Anastasia to rade. Deseci milijuna constraintova. Proving na mobitelu: sekunde do desetke sekundi. |
+| P3 | Kako riješiti opozivost u nullifier modelu? | Otvoreno | Uklanjanje identityCommitmenta iz Merkle stabla (Safe admin). Ali: kako korisnik dokazuje identitet za novi SBT bez ZK? |
+| P4 | Je li hash(OIB) osobni podatak? | **RIJEŠENO: DA.** | EDPB 02/2025, Breyer, WP216, CNIL — jednoglasno. Vidi istraživanje 06. |
+| P5 | Je li nullifier osobni podatak? | Otvoreno (novo) | Argumenti za "ne": ne može se reverzirati, kontekstno specifičan. Argumenti za "da": GDPR široka definicija. Nijedno tijelo nije formalno potvrdilo. |
+| P6 | Legitimni interes ili privola za pravnu osnovu? | Djelomično odgovoreno (novo) | Istraživanje 06: legitimni interes najperspektivniji. Privola problematična jer se ne može efektivno povući s nepromjenjivog lanca. |

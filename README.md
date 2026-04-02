@@ -84,16 +84,17 @@ Ovaj repozitorij trenutno razvija infrastrukturu za tržište. Ali zamislite bud
 ## Dokumentacija
 
 - **[Arhitektonske odluke (ADR)](docs/architecture.md)** — trezor, identitet, izbor mreže, specifikacije pametnih ugovora
-- **[Privatnost lančanih podataka](docs/privatnost.md)** — calldata curenje, nullifier pristup, ZK opcije
-- **[Model prijetnji](docs/model-prijetnji.md)** — 15 napada, stabla napada, matrica rizika
+- **[Privatnost lančanih podataka](docs/privatnost.md)** — GDPR zahtijeva nullifier od faze 1, ZK opcije, EDPB 02/2025
+- **[Model prijetnji](docs/model-prijetnji.md)** — 18 napada (T1-T18), stabla napada, matrica rizika
 - **[Ekonomski model](docs/ekonomski-model.md)** — tok sredstava, održivost platitelja, poslovni model
 - **[Analiza postojećih rješenja](docs/analiza-postojecih.md)** — World ID, Polygon ID, Gitcoin Passport, Estonija
-- **[Putokaz skaliranja](docs/putokaz.md)** — tri faze od dokaza koncepta do nacionalne skale
+- **[Putokaz skaliranja](docs/putokaz.md)** — faza 0 (preduvjeti) + 1a/1b/2/3 s GDPR usklađenošću
+- **[Dubinska istraživanja](research/README.md)** — 7 tema, 14 izvještaja, 7 križnih provjera (prosječna podudarnost 85/100)
 - **[Pravna analiza](docs/pravna-analiza.md)** — eIDAS, GDPR, MiCA, elektroničko glasanje
 
 ## Kako doprinijeti (poziv na raspravu)
 
-Ovo je radni dokument (v0.4). Prije nego napišemo ijednu liniju koda, želimo razbiti ovu arhitekturu na komade i pronaći sve potencijalne mane.
+Ovo je radni dokument (v0.5 — ažurirano na temelju 7 dubinskih istraživanja s križnom provjerom). Prije nego napišemo ijednu liniju koda, želimo razbiti ovu arhitekturu na komade i pronaći sve potencijalne mane.
 
 **Otvorene teme za raspravu u GitHub pitanjima:**
 

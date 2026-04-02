@@ -32,15 +32,21 @@ Imamo li pravo koristiti JWT koji Certilia izdaje izvan njene predviđene namjen
 
 ---
 
-## 2. GDPR i osobni podaci na lancu
+## 2. GDPR i osobni podaci na lancu (AŽURIRANO v0.5 — istraživanje 06)
 
-### Problem: Hash OIB-a kao osobni podatak
+### Pravni zaključak (potvrđen dvama neovisnim izvorima, 93/100 podudarnost)
 
-GDPR definira "osobni podatak" široko: **svaki podatak koji se može povezati s identificiranom ili identificabilnom fizičkom osobom** (Članak 4(1)).
+**`keccak256(OIB)` pohranjen na javnom blockchainu JEST osobni podatak prema GDPR-u.** Ovo je nedvosmisleno.
 
-Sudska praksa Suda EU (CJEU) potvrđuje:
-- Pseudonimizirani podaci (uključujući hasheve) **jesu osobni podaci** ako postoji razumna mogućnost ponovne identifikacije (presuda Breyer, C-582/14).
-- Hash OIB-a je deterministički — isti OIB uvijek daje isti hash. Ako itko ima tablicu OIB→hash, deanonimizacija je trivijalna.
+Temeljni izvori:
+- **EDPB Smjernice 02/2025 o blockchainu** (8.4.2025.): "hash će se također smatrati osobnim podatkom"
+- **EDPB Smjernice 01/2025 o pseudonimizaciji** (16.1.2025.): pseudonimizirani podaci = osobni podaci
+- **CJEU Breyer (C-582/14)** (19.10.2016.): relativni test identifikabilnosti
+- **WP29 WP216** (10.4.2014.): hashing nije anonimizacija
+- **CNIL blockchain smjernice** (24.9.2018.): keyed hash s uništavanjem ključa kao "bliže brisanju"
+- **ICO smjernice** (28.3.2025.): "motivated intruder" test
+
+OIB ima prostor od ~10^11 vrijednosti — brute-force izračun svih hasheva traje **minutu do sati** na modernom hardveru.
 
 ### Implikacije za naš sustav
 
@@ -144,13 +150,30 @@ eIDAS 2.0 ide **u korist** našeg projekta. Ali moramo od prvog dana projektirat
 
 ---
 
-## 6. Prioritetni pravni koraci
+## 6. Pravna osnova obrade — legitimni interes (NOVO v0.5)
 
-| Prioritet | Korak | Trošak (procjena) |
-|-----------|-------|--------------------|
-| 1 | Pročitati i analizirati Certilia uvjete korištenja (L1-L3) | Besplatno |
-| 2 | Konzultacija s GDPR stručnjakom o lančanim podacima | 500-2.000 EUR |
-| 3 | DPIA (procjena utjecaja na zaštitu podataka) | 1.000-5.000 EUR |
-| 4 | HANFA upit o CASP licenci (L5-L6) | 500-1.000 EUR (pravnik za pripremu upita) |
-| 5 | Kontakt s AKD-om oko službene suradnje | Besplatno |
-| 6 | Praćenje eIDAS 2.0 implementacije u Hrvatskoj | Kontinuirano |
+Iz istraživanja 06 (93/100 podudarnost):
+
+**Legitimni interes (čl. 6(1)(f)) je najperspektivnija pravna osnova.** Zahtijeva trodijelni test:
+
+1. **Test svrhe:** Sprječavanje Sybil napada = zaštita integriteta platforme. Uvodna izjava 47 GDPR-a prepoznaje sprječavanje prijevare kao legitimni interes.
+2. **Test nužnosti:** Moramo dokazati da ne postoji manje invazivna alternativa. ZK nullifier ovo zadovoljava — minimizira podatke na lancu.
+3. **Test ravnoteže:** Nullifier pristup značajno smanjuje utjecaj na prava ispitanika u usporedbi s hash pristupom.
+
+**Privola (čl. 6(1)(a)) je PROBLEMATIČNA** za neizbrisive blockchain zapise — čl. 7(3) zahtijeva da povlačenje privole bude jednako jednostavno kao davanje, što je nemoguće na nepromjenjivom lancu.
+
+### Worldcoin kao presedan
+
+Worldcoin (World) koristi legitimni interes za obradu iris kodova za Sybil otpornost. Regulatorna reakcija bila je masivna (BayLDA, AEPD, CNPD, Garante — kazne i privremene zabrane u 8+ jurisdikcija), ali prigovori su se primarno odnosili na **biometrijske podatke** (čl. 9), ne na sam koncept legitimnog interesa za Sybil otpornost. Naš projekt NE koristi biometrijske podatke — hash/nullifier OIB-a nije biometrija — što nas stavlja u povoljniji regulatorni položaj.
+
+## 7. Prioritetni pravni koraci (AŽURIRANO v0.5)
+
+| Prioritet | Korak | Trošak (procjena) | Status |
+|-----------|-------|--------------------|--------|
+| 1 | Pročitati Certilia uvjete korištenja (L1-L3) | Besplatno | Čeka registraciju na developer portal |
+| 2 | **DPIA (procjena utjecaja na zaštitu podataka)** | 1.000-5.000 EUR | **OBAVEZNO** prema EDPB 02/2025 |
+| 3 | **Prethodno savjetovanje s AZOP-om** | Besplatno (ali DPIA potreban kao ulaz) | Preporučeno iz istraživanja 06 |
+| 4 | HANFA upit o CASP licenci (L5-L6) | 500-1.000 EUR | Čeka |
+| 5 | Konzultacija s GDPR stručnjakom o nullifier pristupu | 500-2.000 EUR | Po potrebi — ako AZOP zatraži |
+| 6 | Kontakt s AKD-om oko službene suradnje | Besplatno | Čeka |
+| 7 | Praćenje eIDAS 2.0 implementacije u Hrvatskoj | Kontinuirano | EUDI rok kraj 2026. (istraživanje 05) |
