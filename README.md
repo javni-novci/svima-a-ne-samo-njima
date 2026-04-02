@@ -83,7 +83,13 @@ Ovaj repozitorij trenutno razvija infrastrukturu za tržište. Ali zamislite bud
 
 ## Dokumentacija
 
-- **[Zapis arhitektonskih odluka i model prijetnji](docs/architecture.md)** — detaljan tehnički pregled odluka, odbačenih alternativa, analize prijetnji i specifikacija pametnih ugovora.
+- **[Arhitektonske odluke (ADR)](docs/architecture.md)** — trezor, identitet, izbor mreže, specifikacije pametnih ugovora
+- **[Privatnost lančanih podataka](docs/privatnost.md)** — calldata curenje, nullifier pristup, ZK opcije
+- **[Model prijetnji](docs/model-prijetnji.md)** — 15 napada, stabla napada, matrica rizika
+- **[Ekonomski model](docs/ekonomski-model.md)** — tok sredstava, održivost platitelja, poslovni model
+- **[Analiza postojećih rješenja](docs/analiza-postojecih.md)** — World ID, Polygon ID, Gitcoin Passport, Estonija
+- **[Putokaz skaliranja](docs/putokaz.md)** — tri faze od dokaza koncepta do nacionalne skale
+- **[Pravna analiza](docs/pravna-analiza.md)** — eIDAS, GDPR, MiCA, elektroničko glasanje
 
 ## Kako doprinijeti (poziv na raspravu)
 

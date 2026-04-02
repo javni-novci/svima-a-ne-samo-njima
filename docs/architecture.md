@@ -286,91 +286,15 @@ Korisnik                  Skupljač (Gelato/Biconomy)       Gnosis lanac
 
 ---
 
-## 5. Analiza prijetnji (model prijetnji)
+## 5. Model prijetnji
 
-### 5.1. Matrica napada
+Potpuna analiza prijetnji izdvojena je u zasebni dokument: **[model-prijetnji.md](model-prijetnji.md)**
 
-| # | Napad | Vektor | Ublažavanje | Rezidualni rizik |
-|---|-------|--------|-------------|------------------|
-| T1 | Kompromitiran Node.js poslužitelj | Napadač preuzme poslužitelj | Poslužitelj nema Web3 ključeve, ne može falsificirati AKD potpis. Može jedino prestati prosljeđivati JWT-ove (uskrata usluge). | Nizak. Uskrata usluge na autentikaciju, ali sredstva i identiteti sigurni. |
-| T2 | Zamjena nonce-a (poslužitelj podmeće tuđu adresu) | Zlonamjerni ili hakiran poslužitelj | Klijent u koraku 4 parsira auth URL i verificira da je nonce == vlastita adresa. Odbija preusmjeravanje ako se ne poklapa. | Nizak. Ovisi o ispravnoj implementaciji klijenta. |
-| T3 | Ponovno korištenje JWT-a (isti JWT korišten dvaput) | Napadač presretne JWT | Pametni ugovor vodi mapu `usedJWTs[hash]`. Drugi poziv s istim JWT-om vraća pogrešku. Dodatno: JWT ima `exp` tvrdnju. | Vrlo nizak. |
-| T4 | Sybil napad (jedna osoba, više SBT-ova) | Korisnik koristi više novčanika | Pametni ugovor mora iz JWT-a izvući jedinstveni identifikator (`sub` tvrdnja ili sažetak OIB-a) i voditi mapu `identityUsed[hash]`. Drugi pokušaj vraća pogrešku. | Nizak. Ovisi o jedinstvenosti identifikatora u JWT-u. |
-| T5 | Kompromis Certilia ključa | AKD privatni ključ procurjeli | `updateCertiliaPublicKey()` — administrator (Safe višepotpisni) rotira ključ. Stari SBT-ovi se mogu skupno opozvati. | Srednji. Prozor izloženosti do detekcije. |
-| T6 | Iscrpljivanje platitelja | Spam korisničkih operacija | Ograničenje: maks. 1 kovanje bez goriva po adresi. Gornja granica proračuna platitelja. | Nizak. Napadač može potrošiti proračun, ali ne može ukrasti sredstva. |
-| T7 | Greška u pametnom ugovoru | Pogreška u JWT parsiranju / SBT logici | Formalna verifikacija kritičnih dijelova. Profesionalna revizija prije produkcije. | Srednji. Ovisi o kvaliteti revizije. |
-| T8 | Izgubljen mobitel / istekla iskaznica | Korisnik gubi pristup Certilia identitetu | `revokeSBT(address)` — poziva Safe višepotpisni. Korisnik može ponovno skovati s novim novčanikom nakon ponovne Certilia verifikacije. | Nizak. |
-| T9 | Napad na opskrbni lanac frontenda | Zlonamjerni npm paket, otmica CDN-a | Korisnik verificira nonce (korak 4). Čak i zlonamjerni frontend ne može ukrasti sredstva bez privatnog ključa. SRI sažeci na CDN resursima. | Srednji. Frontend može prikazati lažne podatke ali ne može izvući ključeve iz hardverskog novčanika. |
-
-### 5.2. Detaljna analiza kritičnih napada
-
-#### T2: Zamjena nonce-a — detaljno
-
-**Scenarij:** Napadač kontrolira poslužitelj. Kada korisnik 0xAlice zatraži autentikaciju, poslužitelj generira URL s `nonce=0xEve` umjesto `nonce=0xAlice`. Ako Alice ne provjeri, Certilia će izdati JWT koji vezuje Alicin identitet za Evin novčanik.
-
-**Ublažavanje (korak 4 iz ADR-002):**
-
-```
-// Pseudokôd frontenda
-const authUrl = await fetch('/auth/certilia', { body: { walletAddress: myAddress } })
-const parsedUrl = new URL(authUrl)
-const nonceInUrl = parsedUrl.searchParams.get('nonce')
-
-if (nonceInUrl.toLowerCase() !== myAddress.toLowerCase()) {
-  throw new Error('SIGURNOST: Poslužitelj vratio pogrešan nonce. Prekidam.')
-}
-
-// Tek sada preusmjeri korisnika
-window.location.href = authUrl
-```
-
-**Preostali rizik:** Ova obrana ovisi o integritetu frontenda. Ako je frontend kompromitiran (T9), napadač može preskočiti provjeru. Zato je hardverski novčanik + korisnička edukacija zadnja linija obrane.
-
-#### T4: Sybil napad — detaljno
-
-**Scenarij:** Osoba s jednim OIB-om generira 10 novčanika i pokušava skovati 10 SBT-ova za 10 glasova.
-
-**Ublažavanje:**
-
-```
-// Pseudokôd pametnog ugovora
-mapping(bytes32 => bool) public identityClaimed;
-
-function claimCertiliaSBT(bytes calldata jwt) external {
-    // ... JWT verifikacija ...
-
-    bytes32 identityHash = keccak256(abi.encodePacked(jwt.sub));
-
-    require(!identityClaimed[identityHash], "Identitet vec iskoristen");
-    identityClaimed[identityHash] = true;
-
-    _mint(msg.sender, tokenId);
-}
-```
-
-**Otvoreno pitanje:** Što je `sub` tvrdnja u Certilia JWT-u? Ako je to sažetak OIB-a, dobro. Ako je identifikator sesije, ne radi. Trebamo Certilia dokumentaciju.
-
-#### T5: Rotacija Certilia ključa — detaljno
-
-**Scenarij:** AKD objavi da rotira svoj OIDC ključ za potpisivanje (standardna praksa ili nakon proboja).
-
-**Tok:**
-
-```
-AKD objavljuje novi JWKS
-        |
-        v
-Safe višepotpisni (administrator) primijeti
-        |
-        v
-Safe pokreće tx: CertiliaSBT.updatePublicKey(newKey)
-        |
-        v
-Pametni ugovor od sada verificira JWT-ove s novim ključem.
-Stari SBT-ovi ostaju važeći (već su verificirani).
-```
-
-**Kritično:** `updatePublicKey` MORA biti `onlyAdmin` gdje je administrator = Safe adresa. Nikakav EOA, nikakav pojedinačni ključ.
+Sadrži:
+- 15 identificiranih napada (T1-T15) klasificiranih po ozbiljnosti
+- Stabla napada za kritične scenarije (krađa identiteta, krađa sredstava)
+- Matricu rizika (vjerojatnost × utjecaj)
+- Prioritetni popis ublažavanja
 
 ---
 

@@ -52,5 +52,11 @@ Svaka prihvaćena odluka mora biti zapisana kao ADR sa sljedećom strogom strukt
 
 ## KLJUČNI DOKUMENTI
 
-- `README.md` — Tehniči pregled v0.2, vizija i pregled arhitekture.
-- `docs/architecture.md` — Detaljni ADR-ovi, model prijetnji, specifikacije pametnih ugovora i otvorena pitanja.
+- `README.md` — Tehnički pregled v0.3, vizija i pregled arhitekture.
+- `docs/architecture.md` — ADR-ovi (trezor, identitet, mreža), specifikacije pametnih ugovora, otvorena pitanja.
+- `docs/privatnost.md` — ADR-004: calldata curenje, nullifier pristup, ZK opcije, GDPR implikacije.
+- `docs/model-prijetnji.md` — 15 napada (T1-T15), stabla napada, matrica rizika, prioritetni popis ublažavanja.
+- `docs/ekonomski-model.md` — Tok sredstava, održivost platitelja goriva, poslovni model, izlazni scenariji.
+- `docs/analiza-postojecih.md` — Usporedba s World ID, Polygon ID, Gitcoin Passport, Estonija e-Residency.
+- `docs/putokaz.md` — Tri faze skaliranja s tehničkim zahtjevima i metrikama uspjeha.
+- `docs/pravna-analiza.md` — eIDAS, GDPR, MiCA, elektroničko glasanje, EUDI novčanik.
